@@ -1,0 +1,51 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #1e2430;
+  font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+  color: #e9edf2;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a4150;
+  border-radius: 4px;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Native controls inherit the dark theme so selects/inputs match the design */
+select option {
+  background: #2f3644;
+  color: #e9edf2;
+}
+
+input,
+select,
+button,
+textarea {
+  font-family: inherit;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}

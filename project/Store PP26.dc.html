@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background:#1e2430; font-family:'Noto Sans Thai','Inter',sans-serif; }
+    * { box-sizing: border-box; }
+    ::-webkit-scrollbar{ width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb{ background:#3a4150; border-radius:4px; }
+    @keyframes toastIn { from{ opacity:0; transform:translate(-50%,10px); } to{ opacity:1; transform:translate(-50%,0); } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#1e2430; color:#e9edf2; display:flex;">
+
+  <!-- Sidebar -->
+  <aside style="width:236px; flex-shrink:0; background:#20262f; border-right:1px solid #333b48; display:flex; flex-direction:column; padding:20px 14px; gap:18px; position:sticky; top:0; height:100vh; overflow-y:auto;">
+    <div style="display:flex; align-items:center; gap:10px; padding:0 4px;">
+      <div style="width:38px; height:38px; border-radius:9px; background:#f5a623; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#1e2430; flex-shrink:0;">PP26</div>
+      <div>
+        <div style="font-weight:800; font-size:16px; line-height:1.1;">Store PP26</div>
+        <div style="font-size:10.5px; color:#8b94a3;">เบิก-คืนทรัพย์สินหน้างาน</div>
+      </div>
+    </div>
+
+    <div style="display:flex; background:#2a303c; border:1px solid #3a4150; border-radius:10px; padding:3px;">
+      <button style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:8px; font-size:12px; font-weight:600; font-family:inherit;" onClick="{{ onSetRoleStaff }}">Staff</button>
+      <button style="flex:1; border:none; cursor:pointer; padding:7px 4px; border-radius:8px; font-size:12px; font-weight:600; font-family:inherit;" onClick="{{ onSetRoleAdmin }}">Store</button>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="6">
+        <button style="{{ nav.style }}" onClick="{{ nav.onClick }}">
+          <span>{{ nav.label }}</span>
+          <sc-if value="{{ nav.hasBadge }}" hint-placeholder-val="{{ false }}">
+            <span style="background:#f5a623; color:#1e2430; font-size:10.5px; font-weight:800; border-radius:999px; padding:1px 7px;">{{ nav.badgeText }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:auto; font-size:10.5px; color:#5c6472; padding:0 4px;">เมนูนี้ต่อยอดเพิ่มหน้าใหม่ได้ในอนาคต เช่น "รับเข้าจากสโตร์กลาง"</div>
+  </aside>
+
+  <!-- Content -->
+  <div style="flex:1; min-width:0; padding:28px 32px 60px; overflow-y:auto;">
+
+    <!-- ============ DASHBOARD ============ -->
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">ภาพรวมสต็อกสโตร์&nbsp;</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:20px;">อัปเดตล่าสุด: 07/07/2026 09:40 น.</div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:22px;">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:12px; color:#8b94a3; margin-bottom:8px;">ของสิ้นเปลือง (รายการ)</div>
+            <div style="font-size:30px; font-weight:800;">{{ consumableTypeCount }}</div>
+          </div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:12px; color:#e0555f; margin-bottom:8px;">ใกล้หมด ควรเบิกเติม</div>
+            <div style="font-size:30px; font-weight:800; color:#e0555f;">{{ lowStockCount }}</div>
+          </div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:12px; color:#8b94a3; margin-bottom:8px;">ทรัพย์สิน/ครุภัณฑ์ (ชิ้น)</div>
+            <div style="font-size:30px; font-weight:800;">{{ assetTotalCount }}</div>
+          </div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:12px; color:#f5a623; margin-bottom:8px;">คำขอรออนุมัติ</div>
+            <div style="font-size:30px; font-weight:800; color:#f5a623;">{{ pendingCount }}</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:26px;">
+          <div style="background:#262c38; border-left:4px solid #34c471; border-radius:10px; padding:14px 16px;">
+            <div style="font-size:12px; color:#8b94a3;">พร้อมเบิก</div>
+            <div style="font-size:24px; font-weight:800; color:#34c471;">{{ countAvailable }}</div>
+          </div>
+          <div style="background:#262c38; border-left:4px solid #f5a623; border-radius:10px; padding:14px 16px;">
+            <div style="font-size:12px; color:#8b94a3;">กำลังถูกเบิกใช้</div>
+            <div style="font-size:24px; font-weight:800; color:#f5a623;">{{ countInUse }}</div>
+          </div>
+          <div style="background:#262c38; border-left:4px solid #4a90d9; border-radius:10px; padding:14px 16px;">
+            <div style="font-size:12px; color:#8b94a3;">ส่งซ่อม</div>
+            <div style="font-size:24px; font-weight:800; color:#4a90d9;">{{ countRepair }}</div>
+          </div>
+          <div style="background:#262c38; border-left:4px solid #e0555f; border-radius:10px; padding:14px 16px;">
+            <div style="font-size:12px; color:#8b94a3;">ชำรุด</div>
+            <div style="font-size:24px; font-weight:800; color:#e0555f;">{{ countDamaged }}</div>
+          </div>
+          <div style="background:#262c38; border-left:4px solid #9b6bea; border-radius:10px; padding:14px 16px;">
+            <div style="font-size:12px; color:#8b94a3;">หาย</div>
+            <div style="font-size:24px; font-weight:800; color:#9b6bea;">{{ countLost }}</div>
+          </div>
+        </div>
+
+        <div style="font-size:16px; font-weight:700; margin-bottom:10px;">ทรัพย์สินแยกตามประเภท</div>
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden; margin-bottom:26px;">
+          <div style="display:grid; grid-template-columns:1.3fr 0.7fr 0.9fr 0.9fr 0.7fr 0.7fr 0.6fr 2fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:12px; color:#8b94a3; font-weight:700;">
+            <div>ประเภท</div><div>ทั้งหมด</div><div>พร้อมเบิก</div><div>ใช้งานอยู่</div><div>ส่งซ่อม</div><div>ชำรุด</div><div>รหัสทั้งหมด</div>
+          </div>
+          <sc-for list="{{ assetGroups }}" as="g" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:1.3fr 0.7fr 0.9fr 0.9fr 0.7fr 0.7fr 0.6fr 2fr; gap:8px; padding:12px 16px; border-top:1px solid #333b48; font-size:13px; align-items:center;">
+              <div style="font-weight:700;">{{ g.category }}</div>
+              <div>{{ g.total }}</div>
+              <div style="color:#34c471; font-weight:700;">{{ g.available }}</div>
+              <div style="color:#f5a623; font-weight:700;">{{ g.inUse }}</div>
+              <div style="color:#4a90d9;">{{ g.repair }}</div>
+              <div style="color:#e0555f;">{{ g.damaged }}</div>
+              
+              <div style="color:#8b94a3; font-size:11px;">{{ g.codesText }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:16px; font-weight:700;">สต็อกวัสดุสิ้นเปลืองคงเหลือ (แยกตามหมวด)</div>
+          <div style="font-size:12px; color:#8b94a3;">{{ lowStockCount }} รายการควรเบิกเติม</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{ consumableCategoryGroups }}" as="cg" hint-placeholder-count="4">
+            <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#2a303c;">
+                <div style="font-weight:700; font-size:13.5px;">{{ cg.category }}</div>
+                <div style="font-size:11.5px; color:#8b94a3;">{{ cg.count }} รายการ</div>
+              </div>
+              <sc-for list="{{ cg.items }}" as="it" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid #333b48; gap:12px;">
+                  <div style="font-weight:600; font-size:13px;">{{ it.name }}</div>
+                  <div style="font-size:12.5px; color:#8b94a3;">คงเหลือ {{ it.qty }} {{ it.unit }} / ขั้นต่ำ {{ it.threshold }}</div>
+                  <div style="background:{{ it.badgeBg }}; color:{{ it.badgeColor }}; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;">{{ it.badgeText }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ REQUEST (multi-item cart) ============ -->
+    <sc-if value="{{ isRequest }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:720px;">
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">เบิกของ</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:20px;">เบิกได้หลายรายการต่อครั้ง ผสมทรัพย์สินและของสิ้นเปลืองได้ ทุกครั้งต้องแนบรูปหลักฐาน</div>
+
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:14px; margin-bottom:18px;">
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:180px;">
+              <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">ผู้เบิก (สตาฟ)</div>
+              <select value="{{ reqStaffId }}" onChange="{{ onReqStaffChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+                <option value="">-- เลือกสตาฟ --</option>
+                <sc-for list="{{ staffList }}" as="st" hint-placeholder-count="3">
+                  <option value="{{ st.id }}">{{ st.name }} ({{ st.position }})</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="flex:1; min-width:160px;">
+              <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">ใช้ในงาน / หน่วยงาน</div>
+              <input type="text" placeholder="เช่น Base Slab" value="{{ reqJob }}" onChange="{{ onReqJobChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+            </div>
+            <div style="width:130px;">
+              <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">Cost Code</div>
+              <input type="text" placeholder="CC-001" value="{{ reqCostCode }}" onChange="{{ onReqCostCodeChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:14px; font-weight:700; margin-bottom:10px;">เพิ่มรายการที่จะเบิก</div>
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+          <div style="display:flex; gap:8px;">
+            <button style="{{ reqTypeAssetStyle }}" onClick="{{ onReqTypeAsset }}">ทรัพย์สิน / ครุภัณฑ์</button>
+            <button style="{{ reqTypeConsumableStyle }}" onClick="{{ onReqTypeConsumable }}">ของสิ้นเปลือง</button>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <sc-if value="{{ isReqTypeAsset }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:1; min-width:220px;">
+                <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">เลือกทรัพย์สิน (พร้อมเบิกเท่านั้น)</div>
+                <select value="{{ reqDraftAssetId }}" onChange="{{ onReqDraftAssetChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+                  <option value="">-- เลือกรหัสทรัพย์สิน --</option>
+                  <sc-for list="{{ availableAssetsForDraft }}" as="a" hint-placeholder-count="3">
+                    <option value="{{ a.id }}">{{ a.code }} — {{ a.category }} ({{ a.name }})</option>
+                  </sc-for>
+                </select>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isReqTypeConsumable }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1; min-width:200px;">
+                <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">เลือกของสิ้นเปลือง</div>
+                <select value="{{ reqDraftConsumableId }}" onChange="{{ onReqDraftConsumableChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+                  <option value="">-- เลือกรายการ --</option>
+                  <sc-for list="{{ consumablesForDraft }}" as="c" hint-placeholder-count="3">
+                    <option value="{{ c.id }}">{{ c.category }} · {{ c.name }} (คงเหลือ {{ c.qty }} {{ c.unit }})</option>
+                  </sc-for>
+                </select>
+              </div>
+              <div style="width:100px;">
+                <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">จำนวน</div>
+                <input type="number" min="1" value="{{ reqDraftQty }}" onChange="{{ onReqDraftQtyChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+              </div>
+            </sc-if>
+            <button disabled="{{ reqAddDisabled }}" style="{{ reqAddStyle }}" onClick="{{ onAddReqLine }}">+ เพิ่มรายการ</button>
+          </div>
+
+          <sc-if value="{{ hasReqCart }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+              <sc-for list="{{ reqCartView }}" as="line" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:12px; background:#2a303c; border-radius:10px; padding:10px 12px;">
+                  <div style="{{ line.thumbStyle }}">{{ line.thumbText }}</div>
+                  <div style="flex:1;">
+                    <div style="font-weight:600; font-size:13.5px;">{{ line.label }}</div>
+                    <div style="font-size:11.5px; color:#8b94a3;">{{ line.typeLabel }} · {{ line.qtyText }}</div>
+                  </div>
+                  <button style="border:none; background:#3a4150; color:#e9edf2; width:26px; height:26px; border-radius:7px; cursor:pointer; font-weight:700;" onClick="{{ line.onRemove }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasNoReqCart }}" hint-placeholder-val="{{ true }}">
+            <div style="text-align:center; color:#8b94a3; font-size:12.5px; padding:8px 0;">ยังไม่มีรายการในคำขอนี้</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">ถ่ายรูปหลักฐานการเบิก (ทั้งชุด)</div>
+            <label for="reqPhotoInput" style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px; border:1.5px dashed #4a5262; border-radius:10px; background:#2a303c;">
+              <sc-if value="{{ hasReqPhoto }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ reqPhotoPreviewStyle }}"></div>
+              </sc-if>
+              <div>
+                <div style="font-size:13px; font-weight:600;">{{ reqPhotoLabel }}</div>
+                <div style="font-size:11px; color:#8b94a3;">แตะเพื่อถ่ายภาพ / เลือกรูป</div>
+              </div>
+            </label>
+            <input id="reqPhotoInput" type="file" accept="image/*" capture="environment" onChange="{{ onReqPhotoChange }}" style="display:none;">
+          </div>
+          <button disabled="{{ reqSubmitDisabled }}" style="{{ reqSubmitStyle }}" onClick="{{ onSubmitRequest }}">ส่งคำขอเบิก ({{ reqCartCount }} รายการ)</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ RETURN (multi-item cart) ============ -->
+    <sc-if value="{{ isReturn }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:720px;">
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">คืนของ</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:20px;">เลือกทรัพย์สินที่ถืออยู่ได้หลายชิ้น แนบรูปถ่ายสภาพของ แล้วส่งคืนพร้อมกัน</div>
+
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:1; min-width:220px;">
+              <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">เลือกทรัพย์สินที่จะคืน</div>
+              <select value="{{ retDraftAssetId }}" onChange="{{ onRetDraftAssetChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+                <option value="">-- เลือกรหัสทรัพย์สิน --</option>
+                <sc-for list="{{ heldAssetsForDraft }}" as="a" hint-placeholder-count="2">
+                  <option value="{{ a.id }}">{{ a.code }} — {{ a.name }} (อยู่กับ {{ a.holderName }})</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="min-width:220px;">
+              <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">สภาพเมื่อคืน</div>
+              <div style="display:flex; gap:8px;">
+                <button style="{{ retCondOkStyle }}" onClick="{{ onRetCondOk }}">ปกติ</button>
+                <button style="{{ retCondRepairStyle }}" onClick="{{ onRetCondRepair }}">ส่งซ่อม</button>
+                <button style="{{ retCondDamagedStyle }}" onClick="{{ onRetCondDamaged }}">ชำรุด</button>
+              </div>
+            </div>
+            <button disabled="{{ retAddDisabled }}" style="{{ retAddStyle }}" onClick="{{ onAddRetLine }}">+ เพิ่มรายการ</button>
+          </div>
+          <div>
+            <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">หมายเหตุรายการนี้ (ถ้ามี)</div>
+            <input type="text" placeholder="เช่น สายไฟหลุดลุ่ย ต้องเปลี่ยน" value="{{ retDraftNote }}" onChange="{{ onRetDraftNoteChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+          </div>
+
+          <sc-if value="{{ hasRetCart }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+              <sc-for list="{{ retCartView }}" as="line" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:12px; background:#2a303c; border-radius:10px; padding:10px 12px;">
+                  <div style="{{ line.thumbStyle }}">{{ line.thumbText }}</div>
+                  <div style="flex:1;">
+                    <div style="font-weight:600; font-size:13.5px;">{{ line.label }}</div>
+                    <div style="font-size:11.5px; color:#8b94a3;">{{ line.holderName }} · <span style="color:{{ line.condColor }};">{{ line.condLabel }}</span></div>
+                  </div>
+                  <button style="border:none; background:#3a4150; color:#e9edf2; width:26px; height:26px; border-radius:7px; cursor:pointer; font-weight:700;" onClick="{{ line.onRemove }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasNoRetCart }}" hint-placeholder-val="{{ true }}">
+            <div style="text-align:center; color:#8b94a3; font-size:12.5px; padding:8px 0;">ยังไม่มีรายการที่จะคืน</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <div style="font-size:12px; color:#8b94a3; margin-bottom:6px;">ถ่ายรูปหลักฐานการคืน (ทั้งชุด)</div>
+            <label for="retPhotoInput" style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px; border:1.5px dashed #4a5262; border-radius:10px; background:#2a303c;">
+              <sc-if value="{{ hasRetPhoto }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ retPhotoPreviewStyle }}"></div>
+              </sc-if>
+              <div>
+                <div style="font-size:13px; font-weight:600;">{{ retPhotoLabel }}</div>
+                <div style="font-size:11px; color:#8b94a3;">แตะเพื่อถ่ายภาพ / เลือกรูป</div>
+              </div>
+            </label>
+            <input id="retPhotoInput" type="file" accept="image/*" capture="environment" onChange="{{ onRetPhotoChange }}" style="display:none;">
+          </div>
+          <button disabled="{{ retSubmitDisabled }}" style="{{ retSubmitStyle }}" onClick="{{ onSubmitReturn }}">ส่งคืนของ ({{ retCartCount }} รายการ)</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ TRACKER ============ -->
+    <sc-if value="{{ isTracker }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">ติดตามทรัพย์สิน</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:18px;">ค้นหาว่าใครถือครองทรัพย์สินอยู่ อยู่หน่วยงานใด หรือใครยังไม่คืน</div>
+
+        <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+          <input type="text" placeholder="ค้นหารหัส / ชื่อ / ผู้ถือครอง / หน่วยงาน" value="{{ trackerQuery }}" onChange="{{ onTrackerQueryChange }}" style="flex:1; min-width:220px; padding:11px 14px; border-radius:9px; background:#262c38; border:1px solid #333b48; color:#e9edf2; font-family:inherit; font-size:14px;">
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+          <button style="{{ filterAllStyle }}" onClick="{{ onFilterAll }}">ทั้งหมด</button>
+          <button style="{{ filterAvailableStyle }}" onClick="{{ onFilterAvailable }}">พร้อมเบิก</button>
+          <button style="{{ filterInUseStyle }}" onClick="{{ onFilterInUse }}">มีคนถือ</button>
+          <button style="{{ filterRepairStyle }}" onClick="{{ onFilterRepair }}">ส่งซ่อม</button>
+          <button style="{{ filterDamagedStyle }}" onClick="{{ onFilterDamaged }}">ชำรุด</button>
+          <button style="{{ filterLostStyle }}" onClick="{{ onFilterLost }}">หาย</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:18px;">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden; max-height:520px; overflow-y:auto;">
+            <div style="display:grid; grid-template-columns:0.9fr 1fr 1.2fr 1fr 1fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:12px; color:#8b94a3; font-weight:700; position:sticky; top:0;">
+              <div>รูป</div><div>รหัส</div><div>ชื่อ</div><div>สถานะ</div><div>ถืออยู่กับ</div>
+            </div>
+            <sc-for list="{{ filteredAssets }}" as="a" hint-placeholder-count="4">
+              <div onClick="{{ a.onSelect }}" style="display:grid; grid-template-columns:0.9fr 1fr 1.2fr 1fr 1fr; gap:8px; padding:10px 16px; border-top:1px solid #333b48; font-size:13px; cursor:pointer; align-items:center;" style-hover="background:#2a303c;">
+                <div style="{{ a.thumbStyle }}">{{ a.thumbText }}</div>
+                <div style="font-weight:700;">{{ a.code }}</div>
+                <div>{{ a.name }}</div>
+                <div style="color:{{ a.statusColor }}; font-weight:600;">{{ a.statusLabel }}</div>
+                <div style="color:#8b94a3;">{{ a.holderName }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="grid-column:span 3;">
+            <sc-if value="{{ hasSelectedAsset }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:22px;">
+                <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:14px;">
+                  <div style="{{ selectedAsset.thumbStyleBig }}">{{ selectedAsset.thumbText }}</div>
+                  <div>
+                    <div style="font-size:22px; font-weight:800; margin-bottom:2px;">{{ selectedAsset.code }}</div>
+                    <div style="color:#8b94a3;">{{ selectedAsset.category }} · {{ selectedAsset.name }}</div>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:14px;">
+                  <div><div style="color:#8b94a3; font-size:12px; margin-bottom:4px;">สถานะ</div><div style="font-weight:700; color:{{ selectedAsset.statusColor }};">{{ selectedAsset.statusLabel }}</div></div>
+                  <div><div style="color:#8b94a3; font-size:12px; margin-bottom:4px;">อยู่กับ</div><div style="font-weight:700;">{{ selectedAsset.holderName }}</div></div>
+                  <div><div style="color:#8b94a3; font-size:12px; margin-bottom:4px;">เบิกวันที่</div><div style="font-weight:700;">{{ selectedAsset.dateText }}</div></div>
+                  <div><div style="color:#8b94a3; font-size:12px; margin-bottom:4px;">ใช้ในงาน</div><div style="font-weight:700;">{{ selectedAsset.siteText }}</div></div>
+                  <div><div style="color:#8b94a3; font-size:12px; margin-bottom:4px;">Cost Code</div><div style="font-weight:700;">{{ selectedAsset.costCodeText }}</div></div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasNoSelectedAsset }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#262c38; border:1px dashed #3a4150; border-radius:14px; padding:40px; text-align:center; color:#8b94a3; font-size:13px;">เลือกทรัพย์สินจากตารางด้านซ้ายเพื่อดูรายละเอียด</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ REPORTS ============ -->
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">รายงานสรุป</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:18px;">สรุปการเบิก-คืนตามช่วงเวลา</div>
+
+        <div style="display:flex; gap:8px; margin-bottom:20px;">
+          <button style="{{ periodDayStyle }}" onClick="{{ onPeriodDay }}">วัน</button>
+          <button style="{{ periodWeekStyle }}" onClick="{{ onPeriodWeek }}">สัปดาห์</button>
+          <button style="{{ periodMonthStyle }}" onClick="{{ onPeriodMonth }}">เดือน</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px;">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:14px; font-weight:700; margin-bottom:12px;">เบิกมากที่สุด (ตามบุคคล)</div>
+            <sc-for list="{{ topPersons }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex; justify-content:space-between; padding:9px 0; border-top:1px solid #333b48; font-size:13px;">
+                <div>{{ p.name }}</div>
+                <div style="font-weight:700; color:#f5a623;">{{ p.count }} ครั้ง</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px;">
+            <div style="font-size:14px; font-weight:700; margin-bottom:12px;">งานที่เบิกใช้มากที่สุด</div>
+            <sc-for list="{{ topJobs }}" as="j" hint-placeholder-count="3">
+              <div style="display:flex; justify-content:space-between; padding:9px 0; border-top:1px solid #333b48; font-size:13px;">
+                <div>{{ j.name }}</div>
+                <div style="font-weight:700; color:#f5a623;">{{ j.count }} ครั้ง</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="font-size:16px; font-weight:700; margin-bottom:10px;">สรุปรายวัน (คลิกเพื่อดูรายละเอียด)</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:24px;">
+          <sc-for list="{{ dailyGroups }}" as="d" hint-placeholder-count="3">
+            <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden;">
+              <div onClick="{{ d.onToggle }}" style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer;">
+                <div style="font-weight:700; font-size:14px;">{{ d.date }}</div>
+                <div style="display:flex; gap:14px; align-items:center;">
+                  <div style="font-size:12.5px; color:#f5a623; font-weight:600;">เบิก {{ d.borrowCount }}</div>
+                  <div style="font-size:12.5px; color:#34c471; font-weight:600;">คืน {{ d.returnCount }}</div>
+                  <div style="color:#8b94a3; font-size:13px;">{{ d.arrow }}</div>
+                </div>
+              </div>
+              <sc-if value="{{ d.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #333b48;">
+                  <sc-for list="{{ d.items }}" as="t" hint-placeholder-count="2">
+                    <div style="display:grid; grid-template-columns:0.8fr 1fr 1.6fr 1.2fr 1fr; gap:8px; padding:10px 18px; border-top:1px solid #2c323e; font-size:12.5px;">
+                      <div style="color:{{ t.actionColor }}; font-weight:600;">{{ t.action }}</div>
+                      <div>{{ t.person }}</div>
+                      <div>{{ t.item }}</div>
+                      <div style="color:#8b94a3;">{{ t.job }}</div>
+                      <div style="color:#8b94a3;">{{ t.costCode }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:16px; font-weight:700; margin-bottom:10px;">ประวัติการเบิก-คืนทั้งหมด</div>
+        <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:1fr 1.2fr 0.8fr 1.6fr 1.2fr 1fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:12px; color:#8b94a3; font-weight:700;">
+            <div>วันที่</div><div>บุคคล</div><div>รายการ</div><div>ของ</div><div>งาน/หน่วยงาน</div><div>Cost Code</div>
+          </div>
+          <sc-for list="{{ transactionsView }}" as="t" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:1fr 1.2fr 0.8fr 1.6fr 1.2fr 1fr; gap:8px; padding:11px 16px; border-top:1px solid #333b48; font-size:13px;">
+              <div>{{ t.date }}</div>
+              <div>{{ t.person }}</div>
+              <div style="color:{{ t.actionColor }}; font-weight:600;">{{ t.action }}</div>
+              <div>{{ t.item }}</div>
+              <div style="color:#8b94a3;">{{ t.job }}</div>
+              <div style="color:#8b94a3;">{{ t.costCode }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CENTRAL STORE IN/OUT ============ -->
+    <sc-if value="{{ isCentral }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">รับเข้า / คืนสโตร์กลาง</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:20px;">ติดตามใบขอใช้จากสโตร์กลาง การรับเข้าของ และการส่งคืนเศษเหล็ก</div>
+
+        <div style="font-size:16px; font-weight:700; margin-bottom:10px;">ใบขอใช้จากสโตร์กลาง</div>
+
+        <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px; margin-bottom:18px; display:flex; flex-direction:column; gap:12px;">
+            <div style="font-size:13px; font-weight:700;">สร้างใบขอใช้ใหม่</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <div style="width:160px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">เลขที่เอกสาร</div><input placeholder="104-001" value="{{ newReqDocNo }}" onChange="{{ onNewReqDocNoChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+              <div style="width:140px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">วันที่</div><input value="{{ newReqDate }}" onChange="{{ onNewReqDateChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+              <div style="flex:1; min-width:140px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ชื่อรายการ</div><input placeholder="เช่น นั่งร้าน" value="{{ newReqLineName }}" onChange="{{ onNewReqLineNameChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+              <div style="flex:1; min-width:120px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ประเภท</div><input value="{{ newReqLineCategory }}" onChange="{{ onNewReqLineCategoryChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+              <div style="width:80px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">หน่วย</div><input value="{{ newReqLineUnit }}" onChange="{{ onNewReqLineUnitChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+              <div style="width:90px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">จำนวนขอ</div><input type="number" value="{{ newReqLineQty }}" onChange="{{ onNewReqLineQtyChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+              <button style="border:none; cursor:pointer; padding:10px 14px; border-radius:8px; font-weight:700; font-size:12.5px; font-family:inherit; background:#3a4150; color:#e9edf2;" onClick="{{ onAddReqLineDraft }}">+ เพิ่มรายการ</button>
+            </div>
+            <sc-if value="{{ hasNewReqLines }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <sc-for list="{{ newReqLinesView }}" as="l" hint-placeholder-count="2">
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:#2a303c; border-radius:8px; padding:8px 12px; font-size:12.5px;">
+                    <div>{{ l.name }} · {{ l.category }} · {{ l.qtyRequested }} {{ l.unit }}</div>
+                    <button style="border:none; background:#3a4150; color:#e9edf2; width:24px; height:24px; border-radius:6px; cursor:pointer;" onClick="{{ l.onRemove }}">×</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <button disabled="{{ createReqDisabled }}" style="{{ createReqBtnStyle }}" onClick="{{ onCreateRequisition }}">สร้างใบขอใช้</button>
+          </div>
+        </sc-if>
+
+        <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:28px;">
+          <sc-for list="{{ requisitionsView }}" as="rq" hint-placeholder-count="2">
+            <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#2a303c;">
+                <div>
+                  <div style="font-weight:800; font-size:14.5px;">ใบขอใช้เลขที่ {{ rq.docNo }}</div>
+                  <div style="font-size:11.5px; color:#8b94a3;">วันที่ {{ rq.date }}</div>
+                </div>
+                <div style="color:{{ rq.statusColor }}; font-weight:700; font-size:13px;">{{ rq.status }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:1.3fr 0.9fr 0.8fr 0.8fr 0.8fr 1.4fr; gap:8px; padding:10px 18px; font-size:11.5px; color:#8b94a3; font-weight:700; border-top:1px solid #333b48;">
+                <div>รายการ</div><div>ประเภท</div><div>ขอไว้</div><div>รับแล้ว</div><div>ค้างส่ง</div><div>จัดการ</div>
+              </div>
+              <sc-for list="{{ rq.lines }}" as="ln" hint-placeholder-count="2">
+                <div style="border-top:1px solid #2c323e; padding:10px 18px;">
+                  <div style="display:grid; grid-template-columns:1.3fr 0.9fr 0.8fr 0.8fr 0.8fr 1.4fr; gap:8px; align-items:center; font-size:13px;">
+                    <div style="font-weight:600;">{{ ln.name }}</div>
+                    <div style="color:#8b94a3;">{{ ln.category }}</div>
+                    <div>{{ ln.qtyRequested }} {{ ln.unit }}</div>
+                    <div style="color:#34c471;">{{ ln.received }} {{ ln.unit }}</div>
+                    <div style="color:{{ ln.remainColor }}; font-weight:700;">{{ ln.remaining }} {{ ln.unit }}</div>
+                    <div>
+                      <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ false }}">
+                        <button style="border:none; cursor:pointer; padding:7px 12px; border-radius:7px; font-size:11.5px; font-weight:700; font-family:inherit; background:#3a4150; color:#e9edf2;" onClick="{{ ln.onStartRecord }}">+ บันทึกรับเข้า</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <sc-if value="{{ ln.isRecording }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:8px; background:#2a303c; border-radius:9px; padding:10px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                      <div style="width:90px;"><input type="number" min="1" value="{{ deliveryDraftQty }}" onChange="{{ onDeliveryQtyChange }}" style="width:100%; padding:8px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+                      <label for="deliveryPhotoInput" style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px 10px; border:1px dashed #4a5262; border-radius:8px; font-size:12px; color:#c3cad4;">
+                        <sc-if value="{{ hasDeliveryPhoto }}" hint-placeholder-val="{{ false }}"><div style="{{ deliveryPhotoPreviewStyle }}"></div></sc-if>
+                        <span>{{ deliveryPhotoLabel }}</span>
+                      </label>
+                      <input id="deliveryPhotoInput" type="file" accept="image/*" onChange="{{ onDeliveryPhotoChange }}" style="display:none;">
+                      <button style="border:none; background:#34c471; color:#12271a; font-weight:700; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; font-family:inherit;" onClick="{{ ln.onConfirmRecord }}">บันทึก</button>
+                      <button style="border:none; background:#3a4150; color:#e9edf2; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; font-family:inherit;" onClick="{{ onCancelRecord }}">ยกเลิก</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:16px; font-weight:700; margin-bottom:10px;">ส่งคืนเศษเหล็กแก่สโตร์กลาง</div>
+        <div style="font-size:12.5px; color:#8b94a3; margin-bottom:14px;">ตอนส่งคืนจะยังไม่ทราบรายการ/จำนวน มีแค่รูปถ่ายเป็นหลักฐาน — ต้องติดตามจนกว่าจะได้รับใบส่งคืนจากสโตร์กลาง</div>
+
+        <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:18px; margin-bottom:18px; display:flex; flex-direction:column; gap:12px;">
+            <div style="font-size:13px; font-weight:700;">บันทึกส่งคืนเศษเหล็ก</div>
+            <div>
+              <label for="scrapPhotoInput" style="display:flex; align-items:center; gap:12px; cursor:pointer; padding:12px; border:1.5px dashed #4a5262; border-radius:10px; background:#2a303c;">
+                <sc-if value="{{ hasScrapDraftPhoto }}" hint-placeholder-val="{{ false }}"><div style="{{ scrapPhotoPreviewStyle }}"></div></sc-if>
+                <div>
+                  <div style="font-size:13px; font-weight:600;">{{ scrapPhotoLabel }}</div>
+                  <div style="font-size:11px; color:#8b94a3;">แตะเพื่อถ่ายภาพ / เลือกรูป</div>
+                </div>
+              </label>
+              <input id="scrapPhotoInput" type="file" accept="image/*" capture="environment" onChange="{{ onScrapPhotoChange }}" style="display:none;">
+            </div>
+            <input placeholder="หมายเหตุ (ถ้ามี) เช่น มาจากงานอะไร" value="{{ scrapDraftNote }}" onChange="{{ onScrapNoteChange }}" style="width:100%; padding:11px 12px; border-radius:9px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:14px;">
+            <button disabled="{{ addScrapDisabled }}" style="{{ addScrapBtnStyle }}" onClick="{{ onAddScrapReturn }}">บันทึกส่งคืนเศษเหล็ก</button>
+          </div>
+        </sc-if>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{ scrapReturnsView }}" as="sr" hint-placeholder-count="2">
+            <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:16px 18px; display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+              <div style="{{ sr.thumbStyle }}"></div>
+              <div style="flex:1; min-width:200px;">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:4px;">
+                  <div style="font-weight:700; font-size:13.5px;">ส่งคืนวันที่ {{ sr.date }}</div>
+                  <div style="color:{{ sr.statusColor }}; font-weight:700; font-size:12px;">{{ sr.statusLabel }}</div>
+                </div>
+                <div style="font-size:12.5px; color:#8b94a3;">{{ sr.note }}</div>
+                <sc-if value="{{ sr.isReceived }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:12px; color:#8b94a3; margin-top:6px;">เลขที่ใบส่งคืน: {{ sr.slipNo }} · วันที่รับ: {{ sr.slipDate }}</div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ isAdminRole }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ sr.isAwaiting }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ sr.notEditing }}" hint-placeholder-val="{{ true }}">
+                    <button style="border:none; cursor:pointer; padding:9px 14px; border-radius:9px; font-weight:700; font-size:12.5px; font-family:inherit; background:#3a4150; color:#e9edf2;" onClick="{{ sr.onToggleEdit }}">บันทึกว่าได้รับใบส่งคืนแล้ว</button>
+                  </sc-if>
+                  <sc-if value="{{ sr.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                      <input placeholder="เลขที่ใบส่งคืน" value="{{ sr.slipNo }}" onChange="{{ sr.onSlipNoChange }}" style="padding:8px 10px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px; width:130px;">
+                      <input placeholder="วันที่รับ" value="{{ sr.slipDate }}" onChange="{{ sr.onSlipDateChange }}" style="padding:8px 10px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px; width:110px;">
+                      <button style="border:none; cursor:pointer; padding:8px 14px; border-radius:8px; font-weight:700; font-size:12px; font-family:inherit; background:#34c471; color:#12271a;" onClick="{{ sr.onConfirmSlip }}">ยืนยัน</button>
+                    </div>
+                  </sc-if>
+                </sc-if>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ ADMIN ============ -->
+    <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:4px;">ผู้ดูแลสโตร์</div>
+        <div style="font-size:13px; color:#8b94a3; margin-bottom:18px;">อนุมัติคำขอ จัดการข้อมูลวัสดุ/ทรัพย์สิน และข้อมูลสตาฟ</div>
+
+        <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+          <button style="{{ adminTabRequestsStyle }}" onClick="{{ onAdminTabRequests }}">คำขอรออนุมัติ ({{ pendingCount }})</button>
+          <button style="{{ adminTabConsumablesStyle }}" onClick="{{ onAdminTabConsumables }}">วัสดุสิ้นเปลือง</button>
+          <button style="{{ adminTabAssetsStyle }}" onClick="{{ onAdminTabAssets }}">ทรัพย์สิน/ครุภัณฑ์</button>
+          <button style="{{ adminTabStaffStyle }}" onClick="{{ onAdminTabStaff }}">พนักงาน/สตาฟ</button>
+        </div>
+
+        <!-- Requests -->
+        <sc-if value="{{ isAdminTabRequests }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ pendingView }}" as="p" hint-placeholder-count="2">
+                <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:16px 18px;">
+                  <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:10px;">
+                    <sc-if value="{{ p.hasPhoto }}" hint-placeholder-val="{{ false }}">
+                      <div style="{{ p.photoPreviewStyle }}"></div>
+                    </sc-if>
+                    <sc-if value="{{ p.hasNoPhoto }}" hint-placeholder-val="{{ true }}">
+                      <div style="width:56px; height:56px; border-radius:10px; background:#2f3644; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#8b94a3;">ไม่มีรูป</div>
+                    </sc-if>
+                    <div style="flex:1; min-width:200px;">
+                      <div style="font-weight:700; font-size:14px; margin-bottom:2px;">{{ p.kindLabel }} · {{ p.staffName }}</div>
+                      <div style="font-size:12px; color:#8b94a3;">{{ p.job }} · {{ p.costCode }} · {{ p.date }} · {{ p.lineCountText }}</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                      <button style="border:none; cursor:pointer; padding:9px 16px; border-radius:9px; font-weight:700; font-size:13px; background:#34c471; color:#12271a; font-family:inherit;" onClick="{{ p.onApprove }}">อนุมัติทั้งหมด</button>
+                      <button style="border:none; cursor:pointer; padding:9px 16px; border-radius:9px; font-weight:700; font-size:13px; background:#3a4150; color:#e9edf2; font-family:inherit;" onClick="{{ p.onReject }}">ปฏิเสธ</button>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px; padding-left:4px;">
+                    <sc-for list="{{ p.lines }}" as="ln" hint-placeholder-count="1">
+                      <div style="display:flex; justify-content:space-between; font-size:12.5px; color:#c3cad4; background:#2a303c; border-radius:8px; padding:7px 12px;">
+                        <div>{{ ln.label }}</div>
+                        <div style="color:#8b94a3;">{{ ln.detail }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ hasNoPending }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#262c38; border:1px dashed #3a4150; border-radius:14px; padding:24px; text-align:center; color:#8b94a3; font-size:13px;">ไม่มีคำขอค้างอนุมัติ</div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- Consumables master data -->
+        <sc-if value="{{ isAdminTabConsumables }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden; margin-bottom:18px;">
+            <div style="display:grid; grid-template-columns:0.6fr 0.7fr 1.3fr 1fr 0.7fr 0.7fr 0.9fr 1.8fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:11.5px; color:#8b94a3; font-weight:700;">
+              <div>รูป</div><div>รหัส</div><div>รายการ</div><div>หมวด</div><div>คงเหลือ</div><div>ขั้นต่ำ</div><div>สถานะ</div><div>จัดการ</div>
+            </div>
+            <sc-for list="{{ consumablesView }}" as="c" hint-placeholder-count="4">
+              <div style="display:grid; grid-template-columns:0.6fr 0.7fr 1.3fr 1fr 0.7fr 0.7fr 0.9fr 1.8fr; gap:8px; padding:10px 16px; border-top:1px solid #333b48; font-size:12.5px; align-items:center;">
+                <div>
+                  <label for="{{ c.photoInputId }}" style="cursor:pointer; display:block;">
+                    <div style="{{ c.thumbStyle }}">{{ c.thumbText }}</div>
+                  </label>
+                  <input id="{{ c.photoInputId }}" type="file" accept="image/*" onChange="{{ c.onPhotoChange }}" style="display:none;">
+                </div>
+                <div style="color:#8b94a3;">{{ c.code }}</div>
+                <sc-if value="{{ c.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ c.name }}" onChange="{{ c.onNameChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px;">
+                </sc-if>
+                <sc-if value="{{ c.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-weight:600;">{{ c.name }}</div>
+                </sc-if>
+                <sc-if value="{{ c.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ c.category }}" onChange="{{ c.onCategoryChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px;">
+                </sc-if>
+                <sc-if value="{{ c.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:#8b94a3;">{{ c.category }}</div>
+                </sc-if>
+                <sc-if value="{{ c.editing }}" hint-placeholder-val="{{ false }}">
+                  <input type="number" value="{{ c.qty }}" onChange="{{ c.onQtyChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px; width:100%;">
+                </sc-if>
+                <sc-if value="{{ c.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div>{{ c.qty }} {{ c.unit }}</div>
+                </sc-if>
+                <sc-if value="{{ c.editing }}" hint-placeholder-val="{{ false }}">
+                  <input type="number" value="{{ c.threshold }}" onChange="{{ c.onThresholdChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px; width:100%;">
+                </sc-if>
+                <sc-if value="{{ c.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:#8b94a3;">{{ c.threshold }}</div>
+                </sc-if>
+                <div style="color:{{ c.statusColor }}; font-weight:700;">{{ c.statusLabel }}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button style="border:1px solid #3a4150; background:#2f3644; color:#e9edf2; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ c.onDec }}">−5</button>
+                  <button style="border:1px solid #3a4150; background:#2f3644; color:#e9edf2; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ c.onInc }}">+5</button>
+                  <button style="border:none; background:#3a4150; color:#e9edf2; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ c.onToggleEdit }}">{{ c.editLabel }}</button>
+                  <button style="border:none; background:#e0555f; color:#fff; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ c.onDelete }}">ลบ</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:14px; font-weight:700; margin-bottom:10px;">เพิ่มรายการวัสดุสิ้นเปลืองใหม่</div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="width:100px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">รหัส</div><input value="{{ newConsumableCode }}" onChange="{{ onNewConsumableCodeChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="flex:1; min-width:140px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ชื่อรายการ</div><input value="{{ newConsumableName }}" onChange="{{ onNewConsumableNameChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="flex:1; min-width:130px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">หมวด</div><input value="{{ newConsumableCategory }}" onChange="{{ onNewConsumableCategoryChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="width:80px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">หน่วย</div><input value="{{ newConsumableUnit }}" onChange="{{ onNewConsumableUnitChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="width:80px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">จำนวน</div><input type="number" value="{{ newConsumableQty }}" onChange="{{ onNewConsumableQtyChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="width:80px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ขั้นต่ำ</div><input type="number" value="{{ newConsumableThreshold }}" onChange="{{ onNewConsumableThresholdChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <button disabled="{{ newConsumableDisabled }}" style="{{ newConsumableBtnStyle }}" onClick="{{ onAddConsumable }}">+ เพิ่ม</button>
+          </div>
+        </sc-if>
+
+        <!-- Assets master data -->
+        <sc-if value="{{ isAdminTabAssets }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden; margin-bottom:18px;">
+            <div style="display:grid; grid-template-columns:0.6fr 0.8fr 1fr 1.1fr 1fr 1.3fr 1.6fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:11.5px; color:#8b94a3; font-weight:700;">
+              <div>รูป</div><div>รหัส</div><div>ประเภท</div><div>รุ่น/ยี่ห้อ</div><div>สถานะ</div><div>อยู่กับ/หน่วยงาน</div><div>จัดการ</div>
+            </div>
+            <sc-for list="{{ assetsAdminView }}" as="a" hint-placeholder-count="4">
+              <div style="display:grid; grid-template-columns:0.6fr 0.8fr 1fr 1.1fr 1fr 1.3fr 1.6fr; gap:8px; padding:10px 16px; border-top:1px solid #333b48; font-size:12.5px; align-items:center;">
+                <div>
+                  <label for="{{ a.photoInputId }}" style="cursor:pointer; display:block;">
+                    <div style="{{ a.thumbStyle }}">{{ a.thumbText }}</div>
+                  </label>
+                  <input id="{{ a.photoInputId }}" type="file" accept="image/*" onChange="{{ a.onPhotoChange }}" style="display:none;">
+                </div>
+                <div style="font-weight:700;">{{ a.code }}</div>
+                <sc-if value="{{ a.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ a.category }}" onChange="{{ a.onCategoryChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px;">
+                </sc-if>
+                <sc-if value="{{ a.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div>{{ a.category }}</div>
+                </sc-if>
+                <sc-if value="{{ a.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ a.name }}" onChange="{{ a.onNameChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12.5px;">
+                </sc-if>
+                <sc-if value="{{ a.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:#8b94a3;">{{ a.name }}</div>
+                </sc-if>
+                <sc-if value="{{ a.editing }}" hint-placeholder-val="{{ false }}">
+                  <select value="{{ a.status }}" onChange="{{ a.onStatusChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:12px;">
+                    <option value="available">พร้อมเบิก</option>
+                    <option value="in_use">ใช้งานอยู่</option>
+                    <option value="repair">ส่งซ่อม</option>
+                    <option value="damaged">ชำรุด</option>
+                    <option value="lost">หาย</option>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ a.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:{{ a.statusColor }}; font-weight:700;">{{ a.statusLabel }}</div>
+                </sc-if>
+                <div style="color:#8b94a3; font-size:11.5px;">{{ a.holderSiteText }}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button style="border:none; background:#3a4150; color:#e9edf2; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ a.onToggleEdit }}">{{ a.editLabel }}</button>
+                  <button style="border:none; background:#e0555f; color:#fff; border-radius:7px; padding:0 9px; height:28px; cursor:pointer; font-size:11.5px; font-family:inherit;" onClick="{{ a.onDelete }}">ลบ</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:14px; font-weight:700; margin-bottom:10px;">เพิ่มทรัพย์สินใหม่</div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="width:110px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">รหัส</div><input value="{{ newAssetCode }}" onChange="{{ onNewAssetCodeChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="flex:1; min-width:130px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ประเภท</div><input value="{{ newAssetCategory }}" onChange="{{ onNewAssetCategoryChange }}" placeholder="เช่น สกัด, ปั๊มน้ำ" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="flex:1; min-width:150px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">รุ่น/ยี่ห้อ</div><input value="{{ newAssetName }}" onChange="{{ onNewAssetNameChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <button disabled="{{ newAssetDisabled }}" style="{{ newAssetBtnStyle }}" onClick="{{ onAddAsset }}">+ เพิ่ม</button>
+          </div>
+        </sc-if>
+
+        <!-- Staff master data -->
+        <sc-if value="{{ isAdminTabStaff }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; overflow:hidden; margin-bottom:18px;">
+            <div style="display:grid; grid-template-columns:0.6fr 1.3fr 1.1fr 1.1fr 1.4fr; gap:8px; padding:12px 16px; background:#2a303c; font-size:12px; color:#8b94a3; font-weight:700;">
+              <div>รูป</div><div>ชื่อ</div><div>เบอร์โทร</div><div>ตำแหน่ง</div><div>จัดการ</div>
+            </div>
+            <sc-for list="{{ staffView }}" as="st" hint-placeholder-count="4">
+              <div style="display:grid; grid-template-columns:0.6fr 1.3fr 1.1fr 1.1fr 1.4fr; gap:8px; padding:10px 16px; border-top:1px solid #333b48; font-size:13px; align-items:center;">
+                <div>
+                  <label for="{{ st.photoInputId }}" style="cursor:pointer; display:block;">
+                    <div style="{{ st.thumbStyle }}">{{ st.thumbText }}</div>
+                  </label>
+                  <input id="{{ st.photoInputId }}" type="file" accept="image/*" onChange="{{ st.onPhotoChange }}" style="display:none;">
+                </div>
+                <sc-if value="{{ st.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ st.name }}" onChange="{{ st.onNameChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;">
+                </sc-if>
+                <sc-if value="{{ st.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-weight:600;">{{ st.name }}</div>
+                </sc-if>
+                <sc-if value="{{ st.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ st.phone }}" onChange="{{ st.onPhoneChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;">
+                </sc-if>
+                <sc-if value="{{ st.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:#8b94a3;">{{ st.phone }}</div>
+                </sc-if>
+                <sc-if value="{{ st.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ st.position }}" onChange="{{ st.onPositionChange }}" style="padding:7px 9px; border-radius:7px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;">
+                </sc-if>
+                <sc-if value="{{ st.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <div style="color:#8b94a3;">{{ st.position }}</div>
+                </sc-if>
+                <div style="display:flex; gap:6px;">
+                  <button style="border:none; background:#3a4150; color:#e9edf2; border-radius:7px; padding:0 10px; height:30px; cursor:pointer; font-size:12px; font-family:inherit;" onClick="{{ st.onToggleEdit }}">{{ st.editLabel }}</button>
+                  <button style="border:none; background:#e0555f; color:#fff; border-radius:7px; padding:0 10px; height:30px; cursor:pointer; font-size:12px; font-family:inherit;" onClick="{{ st.onDelete }}">ลบ</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size:14px; font-weight:700; margin-bottom:10px;">เพิ่มพนักงานใหม่</div>
+          <div style="background:#262c38; border:1px solid #333b48; border-radius:14px; padding:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:150px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ชื่อ-สกุล</div><input value="{{ newStaffName }}" onChange="{{ onNewStaffNameChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="width:150px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">เบอร์โทร</div><input value="{{ newStaffPhone }}" onChange="{{ onNewStaffPhoneChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <div style="flex:1; min-width:150px;"><div style="font-size:11px; color:#8b94a3; margin-bottom:5px;">ตำแหน่ง</div><input value="{{ newStaffPosition }}" onChange="{{ onNewStaffPositionChange }}" style="width:100%; padding:9px 10px; border-radius:8px; background:#2f3644; border:1px solid #3a4150; color:#e9edf2; font-family:inherit; font-size:13px;"></div>
+            <button disabled="{{ newStaffDisabled }}" style="{{ newStaffBtnStyle }}" onClick="{{ onAddStaff }}">+ เพิ่ม</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <!-- Toast -->
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#2a303c; border:1px solid #4a5262; color:#e9edf2; padding:12px 20px; border-radius:11px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.4); animation:toastIn 0.2s ease; z-index:100;">{{ toastText }}</div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STATUS_META = {
+  available: { label: 'พร้อมเบิก', color: '#34c471' },
+  in_use: { label: 'กำลังถูกเบิกใช้', color: '#f5a623' },
+  repair: { label: 'ส่งซ่อม', color: '#4a90d9' },
+  damaged: { label: 'ชำรุด', color: '#e0555f' },
+  lost: { label: 'หาย', color: '#9b6bea' },
+};
+
+function todayStr() { return '07/07/2026'; }
+function nowStr() { return '07/07/2026 ' + '10:0' + Math.floor(Math.random()*9) + ' น.'; }
+
+function thumbStyle(size) {
+  return `width:${size}px; height:${size}px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:8.5px; color:#8b94a3; text-align:center; font-family:monospace; line-height:1.2; background:repeating-linear-gradient(135deg, #2a303c, #2a303c 6px, #313947 6px, #313947 12px); border:1px solid #3a4150;`;
+}
+function photoStyle(size, photo) { return thumbStyle(size) + (photo ? `background:url(${photo}) center/cover; border:1px solid #4a5262;` : ''); }
+
+let uid = 1000;
+function genId(prefix) { uid += 1; return prefix + uid; }
+
+class Component extends DCLogic {
+  state = {
+    role: 'staff',
+    page: 'dashboard',
+    toast: null,
+
+    staff: [
+      { id: 's1', name: 'นายสมชาย ใจดี', phone: '081-234-5601', position: 'ช่างโครงสร้าง', photo: '' },
+      { id: 's2', name: 'นายวิชัย รุ่งเรือง', phone: '081-234-5602', position: 'ช่างไฟฟ้า', photo: '' },
+      { id: 's3', name: 'นายกิตติ ทองดี', phone: '081-234-5603', position: 'โฟร์แมน', photo: '' },
+      { id: 's4', name: 'นายประยุทธ มั่นคง', phone: '081-234-5604', position: 'ช่างเชื่อม', photo: '' },
+      { id: 's5', name: 'นายสมพงษ์ แข็งแรง', phone: '081-234-5605', position: 'ช่างทั่วไป', photo: '' },
+      { id: 's6', name: 'นายอานันท์ พูลสวัสดิ์', phone: '081-234-5606', position: 'ช่างเหล็กเสริม', photo: '' },
+    ],
+
+    consumables: [
+      { id: 'c1', code: 'CN-001', category: 'ความปลอดภัย', name: 'ถุงมือช่าง', unit: 'คู่', qty: 12, threshold: 20, photo: '' },
+      { id: 'c2', code: 'CN-002', category: 'ความปลอดภัย', name: 'แว่นตานิรภัย', unit: 'อัน', qty: 30, threshold: 25, photo: '' },
+      { id: 'c3', code: 'CN-003', category: 'ความปลอดภัย', name: 'หมวกนิรภัย', unit: 'ใบ', qty: 18, threshold: 15, photo: '' },
+      { id: 'c4', code: 'CN-004', category: 'ไฟฟ้า', name: 'เทปพันสายไฟ', unit: 'ม้วน', qty: 45, threshold: 15, photo: '' },
+      { id: 'c5', code: 'CN-005', category: 'ไฟฟ้า', name: 'สายไฟ THW 2.5', unit: 'เมตร', qty: 8, threshold: 30, photo: '' },
+      { id: 'c6', code: 'CN-006', category: 'งานเชื่อม', name: 'ลวดเชื่อม E6013', unit: 'กก.', qty: 40, threshold: 20, photo: '' },
+      { id: 'c7', code: 'CN-007', category: 'งานเชื่อม', name: 'หน้ากากเชื่อม', unit: 'อัน', qty: 4, threshold: 5, photo: '' },
+      { id: 'c8', code: 'CN-008', category: 'เคมีภัณฑ์', name: 'สเปรย์กันสนิม', unit: 'กระป๋อง', qty: 22, threshold: 8, photo: '' },
+      { id: 'c9', code: 'CN-009', category: 'เคมีภัณฑ์', name: 'น้ำมันหล่อลื่น', unit: 'แกลลอน', qty: 6, threshold: 10, photo: '' },
+      { id: 'c10', code: 'CN-010', category: 'งานคอนกรีต', name: 'น็อตยึด M8', unit: 'ตัว', qty: 150, threshold: 50, photo: '' },
+      { id: 'c11', code: 'CN-011', category: 'งานคอนกรีต', name: 'ผ้าใบคลุมงาน', unit: 'ผืน', qty: 5, threshold: 10, photo: '' },
+      { id: 'c12', code: 'CN-012', category: 'งานคอนกรีต', name: 'ลูกปูนหนุนเหล็ก', unit: 'ถุง', qty: 12, threshold: 20, photo: '' },
+      { id: 'c13', code: 'CN-013', category: 'เหล็กเส้น', name: 'เหล็กเส้น DB12', unit: 'เส้น', qty: 220, threshold: 100, photo: '' },
+      { id: 'c14', code: 'CN-014', category: 'เหล็กเส้น', name: 'เหล็กเส้น DB16', unit: 'เส้น', qty: 95, threshold: 100, photo: '' },
+      { id: 'c15', code: 'CN-015', category: 'เหล็กเส้น', name: 'เหล็กเส้น DB20', unit: 'เส้น', qty: 60, threshold: 80, photo: '' },
+      { id: 'c16', code: 'CN-016', category: 'เหล็กเส้น', name: 'เหล็กเส้น DB32', unit: 'เส้น', qty: 15, threshold: 40, photo: '' },
+    ],
+
+    assets: [
+      { id: 'a1', code: 'SCD-001', category: 'สกัด', name: 'Hilti TE1000', status: 'in_use', holderStaffId: 's1', site: 'Base Slab', costCode: 'CC-001', date: '01/07/2026', photo: '' },
+      { id: 'a2', code: 'SCD-002', category: 'สกัด', name: 'Hilti TE1000', status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' },
+      { id: 'a3', code: 'SCD-003', category: 'สกัด', name: 'Bosch GSH11', status: 'repair', holderStaffId: null, site: 'ศูนย์ซ่อม', costCode: null, date: '28/06/2026', photo: '' },
+      { id: 'a4', code: 'SCD-004', category: 'สกัด', name: 'Hilti TE1000', status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' },
+      { id: 'a5', code: 'DRL-010', category: 'สว่าน', name: 'Makita โรตารี่', status: 'in_use', holderStaffId: 's2', site: 'Tower A ชั้น 5', costCode: 'CC-014', date: '03/07/2026', photo: '' },
+      { id: 'a6', code: 'DRL-011', category: 'สว่าน', name: 'Makita โรตารี่', status: 'damaged', holderStaffId: null, site: 'สโตร์', costCode: null, date: '20/06/2026', photo: '' },
+      { id: 'a7', code: 'DRL-012', category: 'สว่าน', name: 'Bosch กระแทก', status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' },
+      { id: 'a8', code: 'WLD-005', category: 'เครื่องเชื่อมไฟฟ้า', name: 'Lincoln 300A', status: 'lost', holderStaffId: 's4', site: 'Site B', costCode: 'CC-009', date: '15/06/2026', photo: '' },
+      { id: 'a9', code: 'WLD-006', category: 'เครื่องเชื่อมไฟฟ้า', name: 'Lincoln 300A', status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' },
+      { id: 'a10', code: 'WLD-007', category: 'เครื่องเชื่อมไฟฟ้า', name: 'Miller 250A', status: 'in_use', holderStaffId: 's6', site: 'Steel Bay', costCode: 'CC-018', date: '06/07/2026', photo: '' },
+      { id: 'a11', code: 'CMP-002', category: 'ปั๊มลม', name: 'Hitachi 2HP', status: 'in_use', holderStaffId: 's3', site: 'Column C3', costCode: 'CC-002', date: '04/07/2026', photo: '' },
+      { id: 'a12', code: 'PMP-001', category: 'ปั๊มน้ำ', name: 'Mitsubishi 1HP', status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' },
+      { id: 'a13', code: 'PMP-002', category: 'ปั๊มน้ำ', name: 'Tsurumi จุ่มน้ำ', status: 'in_use', holderStaffId: 's5', site: 'Site B บ่อพัก', costCode: 'CC-030', date: '05/07/2026', photo: '' },
+    ],
+
+    pending: [
+      { id: 'p1', kind: 'borrow', staffId: 's5', job: 'Tower B ชั้น 2', costCode: 'CC-021', photo: '', date: nowStr(),
+        lines: [ { refType: 'asset', refId: 'a2', qty: 1 } ] },
+    ],
+
+    transactions: [
+      { date: '01/07/2026', person: 'นายสมชาย ใจดี', action: 'เบิก', item: 'SCD-001 Hilti TE1000', job: 'Base Slab', costCode: 'CC-001' },
+      { date: '03/07/2026', person: 'นายวิชัย รุ่งเรือง', action: 'เบิก', item: 'DRL-010 Makita โรตารี่', job: 'Tower A ชั้น 5', costCode: 'CC-014' },
+      { date: '28/06/2026', person: 'ผู้ดูแลสโตร์', action: 'ส่งซ่อม', item: 'SCD-003 Bosch GSH11', job: '-', costCode: '-' },
+      { date: '15/06/2026', person: 'นายประยุทธ มั่นคง', action: 'เบิก', item: 'WLD-005 Lincoln 300A', job: 'Site B', costCode: 'CC-009' },
+      { date: '25/06/2026', person: 'นายสมชาย ใจดี', action: 'คืน', item: 'ถุงมือช่าง x5', job: '-', costCode: '-' },
+      { date: '04/07/2026', person: 'นายกิตติ ทองดี', action: 'เบิก', item: 'CMP-002 Hitachi 2HP', job: 'Column C3', costCode: 'CC-002' },
+      { date: '05/07/2026', person: 'นายวิชัย รุ่งเรือง', action: 'เบิก', item: 'เทปพันสายไฟ x10', job: 'Tower A ชั้น 5', costCode: 'CC-014' },
+      { date: '05/07/2026', person: 'นายสมพงษ์ แข็งแรง', action: 'เบิก', item: 'PMP-002 Tsurumi จุ่มน้ำ', job: 'Site B บ่อพัก', costCode: 'CC-030' },
+      { date: '06/07/2026', person: 'นายอานันท์ พูลสวัสดิ์', action: 'เบิก', item: 'WLD-007 Miller 250A', job: 'Steel Bay', costCode: 'CC-018' },
+      { date: '06/07/2026', person: 'นายอานันท์ พูลสวัสดิ์', action: 'เบิก', item: 'เหล็กเส้น DB20 x40', job: 'Steel Bay', costCode: 'CC-018' },
+    ],
+
+    reqStaffId: '', reqJob: '', reqCostCode: '', reqPhoto: '',
+    reqDraftType: 'asset', reqDraftAssetId: '', reqDraftConsumableId: '', reqDraftQty: 1,
+    reqCart: [],
+
+    retDraftAssetId: '', retDraftCondition: 'ok', retDraftNote: '',
+    retCart: [], retPhoto: '',
+
+    trackerQuery: '', trackerFilter: 'all', selectedAssetId: null,
+
+    reportPeriod: 'week', expandedReportDate: null,
+
+    requisitions: [
+      { id: 'rq1', docNo: '104-001', date: '05/07/2026', lines: [
+        { id: 'l1', name: 'นั่งร้าน', category: 'นั่งร้าน', unit: 'ชุด', qtyRequested: 20 },
+        { id: 'l2', name: 'เหล็กเส้น DB12', category: 'เหล็กเส้น', unit: 'เส้น', qtyRequested: 100 },
+      ]},
+    ],
+    deliveries: [
+      { id: 'd1', reqId: 'rq1', lineId: 'l1', qty: 12, date: '06/07/2026', photo: '' },
+      { id: 'd2', reqId: 'rq1', lineId: 'l2', qty: 100, date: '06/07/2026', photo: '' },
+    ],
+    scrapReturns: [
+      { id: 'sr1', date: '04/07/2026', photo: '', note: 'เศษเหล็กจาก Column C3', status: 'awaiting_slip', slipNo: '', slipDate: '' },
+    ],
+    newReqDocNo: '', newReqDate: '07/07/2026', newReqLines: [],
+    newReqLineName: '', newReqLineCategory: '', newReqLineUnit: '', newReqLineQty: 1,
+    deliveryFormReqId: '', deliveryFormLineId: '', deliveryDraftQty: 1, deliveryDraftPhoto: '',
+    scrapDraftPhoto: '', scrapDraftNote: '', editingScrapIds: [],
+
+    adminTab: 'requests',
+    editingConsumableIds: [], editingAssetIds: [], editingStaffIds: [],
+    newConsumableCode: '', newConsumableName: '', newConsumableCategory: '', newConsumableUnit: '', newConsumableQty: 0, newConsumableThreshold: 0,
+    newAssetCode: '', newAssetCategory: '', newAssetName: '',
+    newStaffName: '', newStaffPhone: '', newStaffPosition: '',
+  };
+
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  setRole(role) { this.setState(s => ({ role, page: (role === 'staff' && s.page === 'admin') ? 'dashboard' : s.page })); }
+  setPage(page) { this.setState({ page }); }
+
+  handlePhoto(e, field) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => this.setState({ [field]: reader.result || '' });
+    reader.readAsDataURL(file);
+  }
+  handleItemPhoto(e, listKey, id) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { this.setState(s => ({ [listKey]: s[listKey].map(x => x.id === id ? { ...x, photo: reader.result || '' } : x) })); };
+    reader.readAsDataURL(file);
+  }
+
+  addReqLine() {
+    const s = this.state;
+    if (s.reqDraftType === 'asset') {
+      if (!s.reqDraftAssetId) return;
+      if (s.reqCart.some(l => l.refType === 'asset' && l.refId === s.reqDraftAssetId)) { this.showToast('เพิ่มรายการนี้แล้ว'); return; }
+      this.setState({ reqCart: [...s.reqCart, { refType: 'asset', refId: s.reqDraftAssetId, qty: 1 }], reqDraftAssetId: '' });
+    } else {
+      if (!s.reqDraftConsumableId) return;
+      if (s.reqCart.some(l => l.refType === 'consumable' && l.refId === s.reqDraftConsumableId)) { this.showToast('เพิ่มรายการนี้แล้ว'); return; }
+      this.setState({ reqCart: [...s.reqCart, { refType: 'consumable', refId: s.reqDraftConsumableId, qty: Number(s.reqDraftQty) || 1 }], reqDraftConsumableId: '', reqDraftQty: 1 });
+    }
+  }
+  removeReqLine(idx) { this.setState(s => ({ reqCart: s.reqCart.filter((_, i) => i !== idx) })); }
+
+  submitRequest() {
+    const s = this.state;
+    if (!s.reqCart.length) return;
+    const pendingItem = { id: genId('p'), kind: 'borrow', staffId: s.reqStaffId, job: s.reqJob, costCode: s.reqCostCode, photo: s.reqPhoto, date: nowStr(), lines: s.reqCart };
+    this.setState({ pending: [...s.pending, pendingItem], reqCart: [], reqStaffId: '', reqJob: '', reqCostCode: '', reqPhoto: '' });
+    this.showToast('ส่งคำขอเบิกแล้ว รอผู้ดูแลสโตร์อนุมัติ');
+  }
+
+  addRetLine() {
+    const s = this.state;
+    if (!s.retDraftAssetId) return;
+    if (s.retCart.some(l => l.assetId === s.retDraftAssetId)) { this.showToast('เพิ่มรายการนี้แล้ว'); return; }
+    this.setState({ retCart: [...s.retCart, { assetId: s.retDraftAssetId, condition: s.retDraftCondition, note: s.retDraftNote }], retDraftAssetId: '', retDraftNote: '' });
+  }
+  removeRetLine(idx) { this.setState(s => ({ retCart: s.retCart.filter((_, i) => i !== idx) })); }
+
+  submitReturn() {
+    const s = this.state;
+    if (!s.retCart.length) return;
+    const first = s.assets.find(a => a.id === s.retCart[0].assetId);
+    const pendingItem = { id: genId('p'), kind: 'return', staffId: first ? first.holderStaffId : null, job: first ? first.site : '', costCode: first ? (first.costCode||'-') : '-', photo: s.retPhoto, date: nowStr(), lines: s.retCart };
+    this.setState({ pending: [...s.pending, pendingItem], retCart: [], retPhoto: '' });
+    this.showToast('ส่งคำขอคืนของแล้ว รอผู้ดูแลสโตร์ยืนยัน');
+  }
+
+  approvePending(id) {
+    const s = this.state;
+    const p = s.pending.find(x => x.id === id);
+    if (!p) return;
+    let assets = s.assets, consumables = s.consumables;
+    const staffName = (sid) => { const st = s.staff.find(x => x.id === sid); return st ? st.name : (sid || 'ไม่ระบุ'); };
+    const newTx = [];
+
+    if (p.kind === 'borrow') {
+      const requesterName = staffName(p.staffId);
+      p.lines.forEach(line => {
+        if (line.refType === 'asset') {
+          const a = assets.find(x => x.id === line.refId);
+          const label = a ? (a.code + ' ' + a.name) : '';
+          assets = assets.map(x => x.id === line.refId ? { ...x, status: 'in_use', holderStaffId: p.staffId, site: p.job, costCode: p.costCode, date: todayStr() } : x);
+          newTx.push({ date: todayStr(), person: requesterName, action: 'เบิก', item: label, job: p.job, costCode: p.costCode });
+        } else {
+          const c = consumables.find(x => x.id === line.refId);
+          const label = c ? (c.name + ' x' + line.qty) : '';
+          consumables = consumables.map(x => x.id === line.refId ? { ...x, qty: Math.max(0, x.qty - line.qty) } : x);
+          newTx.push({ date: todayStr(), person: requesterName, action: 'เบิก', item: label, job: p.job, costCode: p.costCode });
+        }
+      });
+    } else {
+      p.lines.forEach(line => {
+        const a = assets.find(x => x.id === line.assetId);
+        if (!a) return;
+        const label = a.code + ' ' + a.name;
+        const personName = staffName(a.holderStaffId);
+        const newStatus = line.condition === 'ok' ? 'available' : (line.condition === 'repair' ? 'repair' : 'damaged');
+        assets = assets.map(x => x.id === line.assetId ? { ...x, status: newStatus, holderStaffId: null, site: newStatus === 'available' ? 'สโตร์กลาง' : 'ศูนย์ซ่อม', costCode: null, date: null } : x);
+        newTx.push({ date: todayStr(), person: personName, action: 'คืน', item: label, job: '-', costCode: '-' });
+      });
+    }
+
+    this.setState({ assets, consumables, pending: s.pending.filter(x => x.id !== id), transactions: [...newTx, ...s.transactions] });
+    this.showToast('อนุมัติคำขอแล้ว');
+  }
+  rejectPending(id) { this.setState(s => ({ pending: s.pending.filter(x => x.id !== id) })); this.showToast('ปฏิเสธคำขอแล้ว'); }
+
+  adjustConsumable(id, delta) { this.setState(s => ({ consumables: s.consumables.map(c => c.id === id ? { ...c, qty: Math.max(0, c.qty + delta) } : c) })); }
+  toggleEditConsumable(id) { this.setState(s => ({ editingConsumableIds: s.editingConsumableIds.includes(id) ? s.editingConsumableIds.filter(x => x !== id) : [...s.editingConsumableIds, id] })); }
+  updateConsumableField(id, field, value) { this.setState(s => ({ consumables: s.consumables.map(c => c.id === id ? { ...c, [field]: value } : c) })); }
+  deleteConsumable(id) { this.setState(s => ({ consumables: s.consumables.filter(c => c.id !== id) })); this.showToast('ลบรายการแล้ว'); }
+  addConsumable() {
+    const s = this.state;
+    if (!s.newConsumableName || !s.newConsumableUnit) return;
+    this.setState({
+      consumables: [...s.consumables, { id: genId('c'), code: s.newConsumableCode || genId('CN'), category: s.newConsumableCategory || 'ทั่วไป', name: s.newConsumableName, unit: s.newConsumableUnit, qty: Number(s.newConsumableQty)||0, threshold: Number(s.newConsumableThreshold)||0, photo: '' }],
+      newConsumableCode: '', newConsumableName: '', newConsumableCategory: '', newConsumableUnit: '', newConsumableQty: 0, newConsumableThreshold: 0,
+    });
+    this.showToast('เพิ่มรายการวัสดุแล้ว');
+  }
+
+  toggleEditAsset(id) { this.setState(s => ({ editingAssetIds: s.editingAssetIds.includes(id) ? s.editingAssetIds.filter(x => x !== id) : [...s.editingAssetIds, id] })); }
+  updateAssetField(id, field, value) { this.setState(s => ({ assets: s.assets.map(a => a.id === id ? { ...a, [field]: value } : a) })); }
+  deleteAsset(id) { this.setState(s => ({ assets: s.assets.filter(a => a.id !== id) })); this.showToast('ลบทรัพย์สินแล้ว'); }
+  addAsset() {
+    const s = this.state;
+    if (!s.newAssetCode || !s.newAssetName) return;
+    this.setState({
+      assets: [...s.assets, { id: genId('a'), code: s.newAssetCode, category: s.newAssetCategory || 'ทั่วไป', name: s.newAssetName, status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' }],
+      newAssetCode: '', newAssetCategory: '', newAssetName: '',
+    });
+    this.showToast('เพิ่มทรัพย์สินแล้ว');
+  }
+
+  toggleEditStaff(id) { this.setState(s => ({ editingStaffIds: s.editingStaffIds.includes(id) ? s.editingStaffIds.filter(x => x !== id) : [...s.editingStaffIds, id] })); }
+  updateStaffField(id, field, value) { this.setState(s => ({ staff: s.staff.map(x => x.id === id ? { ...x, [field]: value } : x) })); }
+  deleteStaff(id) { this.setState(s => ({ staff: s.staff.filter(x => x.id !== id) })); this.showToast('ลบพนักงานแล้ว'); }
+  addStaff() {
+    const s = this.state;
+    if (!s.newStaffName) return;
+    this.setState({ staff: [...s.staff, { id: genId('s'), name: s.newStaffName, phone: s.newStaffPhone, position: s.newStaffPosition, photo: '' }], newStaffName: '', newStaffPhone: '', newStaffPosition: '' });
+    this.showToast('เพิ่มพนักงานแล้ว');
+  }
+
+  // --- central store: requisitions & delivery ---
+  addReqLineDraft() {
+    const s = this.state;
+    if (!s.newReqLineName || !s.newReqLineUnit) return;
+    this.setState({
+      newReqLines: [...s.newReqLines, { id: genId('rl'), name: s.newReqLineName, category: s.newReqLineCategory || 'ทั่วไป', unit: s.newReqLineUnit, qtyRequested: Number(s.newReqLineQty) || 1 }],
+      newReqLineName: '', newReqLineCategory: '', newReqLineUnit: '', newReqLineQty: 1,
+    });
+  }
+  removeReqLineDraft(idx) { this.setState(s => ({ newReqLines: s.newReqLines.filter((_, i) => i !== idx) })); }
+  createRequisition() {
+    const s = this.state;
+    if (!s.newReqDocNo || !s.newReqLines.length) return;
+    this.setState({
+      requisitions: [...s.requisitions, { id: genId('rq'), docNo: s.newReqDocNo, date: s.newReqDate || todayStr(), lines: s.newReqLines }],
+      newReqDocNo: '', newReqDate: todayStr(), newReqLines: [],
+    });
+    this.showToast('สร้างใบขอใช้แล้ว');
+  }
+  startRecordDelivery(reqId, lineId) { this.setState({ deliveryFormReqId: reqId, deliveryFormLineId: lineId, deliveryDraftQty: 1, deliveryDraftPhoto: '' }); }
+  cancelRecordDelivery() { this.setState({ deliveryFormReqId: '', deliveryFormLineId: '', deliveryDraftQty: 1, deliveryDraftPhoto: '' }); }
+  confirmRecordDelivery() {
+    const s = this.state;
+    const rq = s.requisitions.find(x => x.id === s.deliveryFormReqId);
+    const line = rq && rq.lines.find(x => x.id === s.deliveryFormLineId);
+    const qty = Number(s.deliveryDraftQty) || 0;
+    if (!rq || !line || qty <= 0) return;
+
+    let consumables = s.consumables, assets = s.assets;
+    const matchConsumable = consumables.find(c => c.name === line.name);
+    if (matchConsumable) {
+      consumables = consumables.map(c => c.id === matchConsumable.id ? { ...c, qty: c.qty + qty } : c);
+    } else {
+      const newAssets = [];
+      for (let i = 0; i < qty; i++) {
+        newAssets.push({ id: genId('a'), code: genId((line.category||'AST').slice(0,3).toUpperCase() + '-'), category: line.category, name: line.name, status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' });
+      }
+      assets = [...assets, ...newAssets];
+    }
+
+    const delivery = { id: genId('d'), reqId: rq.id, lineId: line.id, qty, date: todayStr(), photo: s.deliveryDraftPhoto };
+    const tx = { date: todayStr(), person: 'ผู้ดูแลสโตร์', action: 'รับเข้า', item: line.name + ' x' + qty + ' (ใบขอใช้ ' + rq.docNo + ')', job: 'สโตร์กลาง', costCode: '-' };
+
+    this.setState({
+      consumables, assets,
+      deliveries: [...s.deliveries, delivery],
+      transactions: [tx, ...s.transactions],
+      deliveryFormReqId: '', deliveryFormLineId: '', deliveryDraftQty: 1, deliveryDraftPhoto: '',
+    });
+    this.showToast('บันทึกรับเข้าแล้ว');
+  }
+
+  addScrapReturn() {
+    const s = this.state;
+    if (!s.scrapDraftPhoto) return;
+    const record = { id: genId('sr'), date: todayStr(), photo: s.scrapDraftPhoto, note: s.scrapDraftNote, status: 'awaiting_slip', slipNo: '', slipDate: '' };
+    const tx = { date: todayStr(), person: 'ผู้ดูแลสโตร์', action: 'ส่งคืน', item: 'เศษเหล็ก (รอใบส่งคืน)', job: 'สโตร์กลาง', costCode: '-' };
+    this.setState({ scrapReturns: [record, ...s.scrapReturns], transactions: [tx, ...s.transactions], scrapDraftPhoto: '', scrapDraftNote: '' });
+    this.showToast('บันทึกส่งคืนเศษเหล็กแล้ว');
+  }
+  toggleEditScrap(id) { this.setState(s => ({ editingScrapIds: s.editingScrapIds.includes(id) ? s.editingScrapIds.filter(x => x !== id) : [...s.editingScrapIds, id] })); }
+  updateScrapField(id, field, value) { this.setState(s => ({ scrapReturns: s.scrapReturns.map(x => x.id === id ? { ...x, [field]: value } : x) })); }
+  confirmScrapSlip(id) {
+    this.setState(s => ({ scrapReturns: s.scrapReturns.map(x => x.id === id ? { ...x, status: 'slip_received' } : x), editingScrapIds: s.editingScrapIds.filter(x => x !== id) }));
+    this.showToast('บันทึกรับใบส่งคืนแล้ว');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const activeBtn = (active) => `border:none; cursor:pointer; padding:9px 16px; border-radius:9px; font-size:13.5px; font-weight:700; font-family:inherit; white-space:nowrap; background:${active ? '#f5a623' : 'transparent'}; color:${active ? '#1e2430' : '#c3cad4'};`;
+    const navBtn = (active) => `display:flex; align-items:center; justify-content:space-between; gap:8px; border:none; cursor:pointer; padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:600; font-family:inherit; text-align:left; background:${active ? '#f5a623' : 'transparent'}; color:${active ? '#1e2430' : '#c3cad4'};`;
+    const toggleBtn = (active) => `border:none; cursor:pointer; padding:7px 4px; border-radius:8px; font-size:12px; font-weight:600; font-family:inherit; background:${active ? '#f5a623' : 'transparent'}; color:${active ? '#1e2430' : '#c3cad4'};`;
+    const chipBtn = (active, color) => `border:1px solid ${active ? color : '#3a4150'}; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:600; font-family:inherit; background:${active ? color + '22' : 'transparent'}; color:${active ? color : '#c3cad4'};`;
+    const smallToggleBtn = (active) => `border:none; cursor:pointer; padding:8px 14px; border-radius:9px; font-size:12.5px; font-weight:700; font-family:inherit; background:${active ? '#f5a623' : '#262c38'}; color:${active ? '#1e2430' : '#c3cad4'}; border:1px solid ${active ? '#f5a623' : '#333b48'};`;
+    const enabledBtn = (disabled) => `border:none; cursor:${disabled?'not-allowed':'pointer'}; padding:10px 16px; border-radius:9px; font-weight:700; font-size:13px; font-family:inherit; background:${disabled?'#3a4150':'#f5a623'}; color:${disabled?'#7d8592':'#1e2430'};`;
+
+    const staffName = (sid) => { const st = s.staff.find(x => x.id === sid); return st ? st.name : '—'; };
+
+    const assetsWithMeta = s.assets.map(a => {
+      const meta = STATUS_META[a.status];
+      return {
+        ...a,
+        statusLabel: meta.label, statusColor: meta.color,
+        holderName: a.holderStaffId ? staffName(a.holderStaffId) : '—',
+        dateText: a.date || '—', siteText: a.site || '—', costCodeText: a.costCode || '—',
+        thumbStyle: photoStyle(40, a.photo), thumbText: a.photo ? '' : 'no\nphoto',
+        thumbStyleBig: photoStyle(64, a.photo),
+      };
+    });
+
+    const groupMap = {};
+    assetsWithMeta.forEach(a => {
+      if (!groupMap[a.category]) groupMap[a.category] = { category: a.category, total: 0, available: 0, inUse: 0, repair: 0, damaged: 0, lost: 0, codes: [] };
+      const g = groupMap[a.category];
+      g.total++; g.codes.push(a.code);
+      if (a.status === 'available') g.available++;
+      if (a.status === 'in_use') g.inUse++;
+      if (a.status === 'repair') g.repair++;
+      if (a.status === 'damaged') g.damaged++;
+      if (a.status === 'lost') g.lost++;
+    });
+    const assetGroups = Object.values(groupMap).map(g => ({ ...g, codesText: g.codes.join(', ') }));
+
+    const lowStockItems = s.consumables.filter(c => c.qty <= c.threshold);
+
+    const consumableCatMap = {};
+    s.consumables.forEach(c => {
+      if (!consumableCatMap[c.category]) consumableCatMap[c.category] = [];
+      const low = c.qty <= c.threshold;
+      consumableCatMap[c.category].push({ ...c, badgeText: low ? 'ควรเบิกเติม' : 'ปกติ', badgeColor: low ? '#e0555f' : '#34c471', badgeBg: low ? 'rgba(224,85,95,0.15)' : 'rgba(52,196,113,0.15)' });
+    });
+    const consumableCategoryGroups = Object.keys(consumableCatMap).map(category => ({ category, count: consumableCatMap[category].length, items: consumableCatMap[category] }));
+
+    const q = s.trackerQuery.trim().toLowerCase();
+    let filteredAssets = assetsWithMeta.filter(a => {
+      if (s.trackerFilter !== 'all' && a.status !== s.trackerFilter) return false;
+      if (!q) return true;
+      return (a.code + a.category + a.name + a.holderName + (a.site||'')).toLowerCase().includes(q);
+    });
+    filteredAssets = filteredAssets.map(a => ({ ...a, onSelect: () => this.setState({ selectedAssetId: a.id }) }));
+    const selectedAsset = assetsWithMeta.find(a => a.id === s.selectedAssetId) || null;
+
+    const availableAssetsForDraft = s.assets.filter(a => a.status === 'available' && !s.reqCart.some(l => l.refType==='asset' && l.refId===a.id));
+    const consumablesForDraft = s.consumables.filter(c => c.qty > 0);
+    const reqCartView = s.reqCart.map((line, idx) => {
+      if (line.refType === 'asset') {
+        const a = s.assets.find(x => x.id === line.refId);
+        return { label: a ? (a.code + ' — ' + a.name) : '', typeLabel: 'ทรัพย์สิน', qtyText: '1 ชิ้น',
+          thumbStyle: photoStyle(36, a && a.photo), thumbText: (a && a.photo) ? '' : 'no\nphoto', onRemove: () => this.removeReqLine(idx) };
+      }
+      const c = s.consumables.find(x => x.id === line.refId);
+      return { label: c ? c.name : '', typeLabel: 'ของสิ้นเปลือง', qtyText: line.qty + ' ' + (c ? c.unit : ''),
+        thumbStyle: photoStyle(36, c && c.photo), thumbText: (c && c.photo) ? '' : 'no\nphoto', onRemove: () => this.removeReqLine(idx) };
+    });
+    const reqAddDisabled = s.reqDraftType === 'asset' ? !s.reqDraftAssetId : !s.reqDraftConsumableId;
+    const reqSubmitDisabled = !s.reqCart.length || !s.reqStaffId || !s.reqJob || !s.reqCostCode || !s.reqPhoto;
+
+    const heldAssetsForDraft = assetsWithMeta.filter(a => a.status === 'in_use' && !s.retCart.some(l => l.assetId === a.id));
+    const condColors = { ok: '#34c471', repair: '#4a90d9', damaged: '#e0555f' };
+    const condLabels = { ok: 'ปกติ', repair: 'ส่งซ่อม', damaged: 'ชำรุด' };
+    const retCartView = s.retCart.map((line, idx) => {
+      const a = assetsWithMeta.find(x => x.id === line.assetId);
+      return { label: a ? (a.code + ' — ' + a.name) : '', holderName: a ? a.holderName : '',
+        thumbStyle: photoStyle(36, a && a.photo), thumbText: (a && a.photo) ? '' : 'no\nphoto',
+        condColor: condColors[line.condition], condLabel: condLabels[line.condition], onRemove: () => this.removeRetLine(idx) };
+    });
+    const retAddDisabled = !s.retDraftAssetId;
+    const retSubmitDisabled = !s.retCart.length || !s.retPhoto;
+
+    const kindLabels = { borrow: 'คำขอเบิก', return: 'คำขอคืน' };
+    const pendingView = s.pending.map(p => {
+      const lines = p.lines.map(line => {
+        if (p.kind === 'borrow') {
+          if (line.refType === 'asset') { const a = s.assets.find(x => x.id === line.refId); return { label: a ? (a.code + ' ' + a.name) : '', detail: 'ทรัพย์สิน' }; }
+          const c = s.consumables.find(x => x.id === line.refId); return { label: c ? c.name : '', detail: 'x' + line.qty + ' ' + (c?c.unit:'') };
+        } else {
+          const a = s.assets.find(x => x.id === line.assetId); return { label: a ? (a.code + ' ' + a.name) : '', detail: condLabels[line.condition] };
+        }
+      });
+      return { ...p, kindLabel: kindLabels[p.kind], staffName: staffName(p.staffId), lineCountText: p.lines.length + ' รายการ',
+        hasPhoto: !!p.photo, hasNoPhoto: !p.photo, lines,
+        photoPreviewStyle: `width:56px; height:56px; border-radius:10px; flex-shrink:0; background:center/cover no-repeat url('${p.photo}');`,
+        onApprove: () => this.approvePending(p.id), onReject: () => this.rejectPending(p.id) };
+    });
+
+    const consumablesView = s.consumables.map(c => ({
+      ...c,
+      statusLabel: c.qty <= c.threshold ? 'ควรเบิกเติม' : 'ปกติ',
+      statusColor: c.qty <= c.threshold ? '#e0555f' : '#34c471',
+      editing: s.editingConsumableIds.includes(c.id), notEditing: !s.editingConsumableIds.includes(c.id),
+      editLabel: s.editingConsumableIds.includes(c.id) ? 'เสร็จ' : 'แก้ไข',
+      thumbStyle: photoStyle(40, c.photo), thumbText: c.photo ? '' : 'no\nphoto',
+      photoInputId: 'photo-c-' + c.id,
+      onPhotoChange: (e) => this.handleItemPhoto(e, 'consumables', c.id),
+      onNameChange: (e) => this.updateConsumableField(c.id, 'name', e.target.value),
+      onCategoryChange: (e) => this.updateConsumableField(c.id, 'category', e.target.value),
+      onQtyChange: (e) => this.updateConsumableField(c.id, 'qty', Number(e.target.value)||0),
+      onThresholdChange: (e) => this.updateConsumableField(c.id, 'threshold', Number(e.target.value)||0),
+      onDec: () => this.adjustConsumable(c.id, -5), onInc: () => this.adjustConsumable(c.id, 5),
+      onToggleEdit: () => this.toggleEditConsumable(c.id), onDelete: () => this.deleteConsumable(c.id),
+    }));
+
+    const assetsAdminView = assetsWithMeta.map(a => ({
+      ...a,
+      editing: s.editingAssetIds.includes(a.id), notEditing: !s.editingAssetIds.includes(a.id),
+      editLabel: s.editingAssetIds.includes(a.id) ? 'เสร็จ' : 'แก้ไข',
+      holderSiteText: a.holderStaffId ? (a.holderName + ' · ' + a.siteText) : a.siteText,
+      photoInputId: 'photo-a-' + a.id,
+      onPhotoChange: (e) => this.handleItemPhoto(e, 'assets', a.id),
+      onNameChange: (e) => this.updateAssetField(a.id, 'name', e.target.value),
+      onCategoryChange: (e) => this.updateAssetField(a.id, 'category', e.target.value),
+      onStatusChange: (e) => this.updateAssetField(a.id, 'status', e.target.value),
+      onToggleEdit: () => this.toggleEditAsset(a.id), onDelete: () => this.deleteAsset(a.id),
+    }));
+
+    const staffView = s.staff.map(st => ({
+      ...st,
+      editing: s.editingStaffIds.includes(st.id), notEditing: !s.editingStaffIds.includes(st.id),
+      editLabel: s.editingStaffIds.includes(st.id) ? 'เสร็จ' : 'แก้ไข',
+      thumbStyle: photoStyle(40, st.photo), thumbText: st.photo ? '' : 'no\nphoto',
+      photoInputId: 'photo-s-' + st.id,
+      onPhotoChange: (e) => this.handleItemPhoto(e, 'staff', st.id),
+      onNameChange: (e) => this.updateStaffField(st.id, 'name', e.target.value),
+      onPhoneChange: (e) => this.updateStaffField(st.id, 'phone', e.target.value),
+      onPositionChange: (e) => this.updateStaffField(st.id, 'position', e.target.value),
+      onToggleEdit: () => this.toggleEditStaff(st.id), onDelete: () => this.deleteStaff(st.id),
+    }));
+
+    const borrowTx = s.transactions.filter(t => t.action === 'เบิก');
+    const countBy = (arr, key) => {
+      const m = {}; arr.forEach(t => { m[t[key]] = (m[t[key]] || 0) + 1; });
+      return Object.entries(m).sort((a,b) => b[1]-a[1]).slice(0,5).map(([name,count]) => ({ name, count }));
+    };
+    const topPersons = countBy(borrowTx, 'person');
+    const topJobs = countBy(borrowTx.filter(t => t.job && t.job !== '-'), 'job');
+    const transactionsView = s.transactions.map(t => ({ ...t, actionColor: t.action === 'เบิก' ? '#f5a623' : (t.action === 'คืน' ? '#34c471' : '#4a90d9') }));
+
+    const dateGroupMap = {};
+    s.transactions.forEach(t => { if (!dateGroupMap[t.date]) dateGroupMap[t.date] = []; dateGroupMap[t.date].push(t); });
+    const dailyGroups = Object.keys(dateGroupMap).sort((a,b) => {
+      const pa = a.split('/').reverse().join(''); const pb = b.split('/').reverse().join('');
+      return pb.localeCompare(pa);
+    }).map(date => {
+      const items = dateGroupMap[date].map(t => ({ ...t, actionColor: t.action === 'เบิก' ? '#f5a623' : (t.action === 'คืน' ? '#34c471' : '#4a90d9') }));
+      const expanded = s.expandedReportDate === date;
+      return { date, items, expanded, arrow: expanded ? '▲' : '▼',
+        borrowCount: items.filter(t => t.action === 'เบิก').length, returnCount: items.filter(t => t.action === 'คืน').length,
+        onToggle: () => this.setState({ expandedReportDate: expanded ? null : date }) };
+    });
+
+    const isAdminRole = s.role === 'admin';
+    const pendingCount = s.pending.length;
+    const navItems = [
+      { key: 'dashboard', label: 'ภาพรวมสต็อก', active: s.page === 'dashboard', onClick: () => this.setPage('dashboard') },
+      { key: 'request', label: 'เบิกของ', active: s.page === 'request', onClick: () => this.setPage('request') },
+      { key: 'return', label: 'คืนของ', active: s.page === 'return', onClick: () => this.setPage('return') },
+      { key: 'tracker', label: 'ติดตามทรัพย์สิน', active: s.page === 'tracker', onClick: () => this.setPage('tracker') },
+      { key: 'reports', label: 'รายงานสรุป', active: s.page === 'reports', onClick: () => this.setPage('reports') },
+    ];
+    navItems.push({ key: 'central', label: 'รับเข้า/คืนสโตร์กลาง', active: s.page === 'central', onClick: () => this.setPage('central') });
+    if (isAdminRole) navItems.push({ key: 'admin', label: 'ผู้ดูแลสโตร์', active: s.page === 'admin', onClick: () => this.setPage('admin'), hasBadge: pendingCount > 0, badgeText: pendingCount });
+    const navItemsView = navItems.map(n => ({ ...n, style: navBtn(n.active), hasBadge: !!n.hasBadge, badgeText: n.badgeText }));
+
+    const newConsumableDisabled = !s.newConsumableName || !s.newConsumableUnit;
+    const newAssetDisabled = !s.newAssetCode || !s.newAssetName;
+    const newStaffDisabled = !s.newStaffName;
+
+    return {
+      isAdminRole,
+      staffToggleStyle: toggleBtn(s.role === 'staff'), adminToggleStyle: toggleBtn(s.role === 'admin'),
+      onSetRoleStaff: () => this.setRole('staff'), onSetRoleAdmin: () => this.setRole('admin'),
+      navItems: navItemsView,
+
+      isDashboard: s.page === 'dashboard', isRequest: s.page === 'request', isReturn: s.page === 'return',
+      isTracker: s.page === 'tracker', isReports: s.page === 'reports', isCentral: s.page === 'central', isAdmin: s.page === 'admin' && isAdminRole,
+
+      pendingCount,
+
+      consumableTypeCount: s.consumables.length, lowStockCount: lowStockItems.length, assetTotalCount: s.assets.length,
+      countAvailable: s.assets.filter(a=>a.status==='available').length,
+      countInUse: s.assets.filter(a=>a.status==='in_use').length,
+      countRepair: s.assets.filter(a=>a.status==='repair').length,
+      countDamaged: s.assets.filter(a=>a.status==='damaged').length,
+      countLost: s.assets.filter(a=>a.status==='lost').length,
+      assetGroups, consumableCategoryGroups,
+
+      staffList: s.staff,
+
+      reqTypeAssetStyle: `border:1px solid ${s.reqDraftType==='asset'?'#f5a623':'#3a4150'}; cursor:pointer; padding:9px 16px; border-radius:9px; font-size:13px; font-weight:700; font-family:inherit; background:${s.reqDraftType==='asset'?'#f5a62322':'#2a303c'}; color:${s.reqDraftType==='asset'?'#f5a623':'#c3cad4'};`,
+      reqTypeConsumableStyle: `border:1px solid ${s.reqDraftType==='consumable'?'#f5a623':'#3a4150'}; cursor:pointer; padding:9px 16px; border-radius:9px; font-size:13px; font-weight:700; font-family:inherit; background:${s.reqDraftType==='consumable'?'#f5a62322':'#2a303c'}; color:${s.reqDraftType==='consumable'?'#f5a623':'#c3cad4'};`,
+      onReqTypeAsset: () => this.setState({ reqDraftType: 'asset' }), onReqTypeConsumable: () => this.setState({ reqDraftType: 'consumable' }),
+      isReqTypeAsset: s.reqDraftType === 'asset', isReqTypeConsumable: s.reqDraftType === 'consumable',
+      reqStaffId: s.reqStaffId, onReqStaffChange: (e) => this.setState({ reqStaffId: e.target.value }),
+      reqJob: s.reqJob, onReqJobChange: (e) => this.setState({ reqJob: e.target.value }),
+      reqCostCode: s.reqCostCode, onReqCostCodeChange: (e) => this.setState({ reqCostCode: e.target.value }),
+      availableAssetsForDraft, consumablesForDraft,
+      reqDraftAssetId: s.reqDraftAssetId, onReqDraftAssetChange: (e) => this.setState({ reqDraftAssetId: e.target.value }),
+      reqDraftConsumableId: s.reqDraftConsumableId, onReqDraftConsumableChange: (e) => this.setState({ reqDraftConsumableId: e.target.value }),
+      reqDraftQty: s.reqDraftQty, onReqDraftQtyChange: (e) => this.setState({ reqDraftQty: e.target.value }),
+      reqAddDisabled, reqAddStyle: enabledBtn(reqAddDisabled), onAddReqLine: () => this.addReqLine(),
+      reqCartView, hasReqCart: reqCartView.length > 0, hasNoReqCart: reqCartView.length === 0, reqCartCount: reqCartView.length,
+      reqPhoto: s.reqPhoto, hasReqPhoto: !!s.reqPhoto, reqPhotoLabel: s.reqPhoto ? 'แนบรูปแล้ว' : 'ยังไม่ได้แนบรูป (จำเป็น)',
+      reqPhotoPreviewStyle: `width:52px; height:52px; border-radius:8px; flex-shrink:0; background:center/cover no-repeat url('${s.reqPhoto}');`,
+      onReqPhotoChange: (e) => this.handlePhoto(e, 'reqPhoto'),
+      reqSubmitDisabled, onSubmitRequest: () => this.submitRequest(),
+      reqSubmitStyle: `border:none; cursor:${reqSubmitDisabled?'not-allowed':'pointer'}; padding:13px; border-radius:10px; font-size:14.5px; font-weight:700; font-family:inherit; background:${reqSubmitDisabled?'#3a4150':'#f5a623'}; color:${reqSubmitDisabled?'#7d8592':'#1e2430'};`,
+
+      heldAssetsForDraft,
+      retDraftAssetId: s.retDraftAssetId, onRetDraftAssetChange: (e) => this.setState({ retDraftAssetId: e.target.value }),
+      retDraftNote: s.retDraftNote, onRetDraftNoteChange: (e) => this.setState({ retDraftNote: e.target.value }),
+      retCondOkStyle: chipBtn(s.retDraftCondition==='ok', '#34c471'), onRetCondOk: () => this.setState({ retDraftCondition: 'ok' }),
+      retCondRepairStyle: chipBtn(s.retDraftCondition==='repair', '#4a90d9'), onRetCondRepair: () => this.setState({ retDraftCondition: 'repair' }),
+      retCondDamagedStyle: chipBtn(s.retDraftCondition==='damaged', '#e0555f'), onRetCondDamaged: () => this.setState({ retDraftCondition: 'damaged' }),
+      retAddDisabled, retAddStyle: enabledBtn(retAddDisabled), onAddRetLine: () => this.addRetLine(),
+      retCartView, hasRetCart: retCartView.length > 0, hasNoRetCart: retCartView.length === 0, retCartCount: retCartView.length,
+      retPhoto: s.retPhoto, hasRetPhoto: !!s.retPhoto, retPhotoLabel: s.retPhoto ? 'แนบรูปแล้ว' : 'ยังไม่ได้แนบรูป (จำเป็น)',
+      retPhotoPreviewStyle: `width:52px; height:52px; border-radius:8px; flex-shrink:0; background:center/cover no-repeat url('${s.retPhoto}');`,
+      onRetPhotoChange: (e) => this.handlePhoto(e, 'retPhoto'),
+      retSubmitDisabled, onSubmitReturn: () => this.submitReturn(),
+      retSubmitStyle: `border:none; cursor:${retSubmitDisabled?'not-allowed':'pointer'}; padding:13px; border-radius:10px; font-size:14.5px; font-weight:700; font-family:inherit; background:${retSubmitDisabled?'#3a4150':'#f5a623'}; color:${retSubmitDisabled?'#7d8592':'#1e2430'};`,
+
+      trackerQuery: s.trackerQuery, onTrackerQueryChange: (e) => this.setState({ trackerQuery: e.target.value }),
+      filterAllStyle: chipBtn(s.trackerFilter==='all', '#f5a623'), onFilterAll: () => this.setState({ trackerFilter: 'all' }),
+      filterAvailableStyle: chipBtn(s.trackerFilter==='available', '#34c471'), onFilterAvailable: () => this.setState({ trackerFilter: 'available' }),
+      filterInUseStyle: chipBtn(s.trackerFilter==='in_use', '#f5a623'), onFilterInUse: () => this.setState({ trackerFilter: 'in_use' }),
+      filterRepairStyle: chipBtn(s.trackerFilter==='repair', '#4a90d9'), onFilterRepair: () => this.setState({ trackerFilter: 'repair' }),
+      filterDamagedStyle: chipBtn(s.trackerFilter==='damaged', '#e0555f'), onFilterDamaged: () => this.setState({ trackerFilter: 'damaged' }),
+      filterLostStyle: chipBtn(s.trackerFilter==='lost', '#9b6bea'), onFilterLost: () => this.setState({ trackerFilter: 'lost' }),
+      filteredAssets, hasSelectedAsset: !!selectedAsset, hasNoSelectedAsset: !selectedAsset, selectedAsset,
+
+      periodDayStyle: activeBtn(s.reportPeriod==='day'), onPeriodDay: () => this.setState({ reportPeriod: 'day' }),
+      periodWeekStyle: activeBtn(s.reportPeriod==='week'), onPeriodWeek: () => this.setState({ reportPeriod: 'week' }),
+      periodMonthStyle: activeBtn(s.reportPeriod==='month'), onPeriodMonth: () => this.setState({ reportPeriod: 'month' }),
+      topPersons, topJobs, transactionsView, dailyGroups,
+
+      adminTabRequestsStyle: smallToggleBtn(s.adminTab==='requests'), onAdminTabRequests: () => this.setState({ adminTab: 'requests' }),
+      adminTabConsumablesStyle: smallToggleBtn(s.adminTab==='consumables'), onAdminTabConsumables: () => this.setState({ adminTab: 'consumables' }),
+      adminTabAssetsStyle: smallToggleBtn(s.adminTab==='assets'), onAdminTabAssets: () => this.setState({ adminTab: 'assets' }),
+      adminTabStaffStyle: smallToggleBtn(s.adminTab==='staff'), onAdminTabStaff: () => this.setState({ adminTab: 'staff' }),
+      isAdminTabRequests: s.adminTab === 'requests', isAdminTabConsumables: s.adminTab === 'consumables',
+      isAdminTabAssets: s.adminTab === 'assets', isAdminTabStaff: s.adminTab === 'staff',
+
+      hasPending: pendingView.length > 0, hasNoPending: pendingView.length === 0, pendingView,
+      consumablesView,
+      newConsumableCode: s.newConsumableCode, onNewConsumableCodeChange: (e) => this.setState({ newConsumableCode: e.target.value }),
+      newConsumableName: s.newConsumableName, onNewConsumableNameChange: (e) => this.setState({ newConsumableName: e.target.value }),
+      newConsumableCategory: s.newConsumableCategory, onNewConsumableCategoryChange: (e) => this.setState({ newConsumableCategory: e.target.value }),
+      newConsumableUnit: s.newConsumableUnit, onNewConsumableUnitChange: (e) => this.setState({ newConsumableUnit: e.target.value }),
+      newConsumableQty: s.newConsumableQty, onNewConsumableQtyChange: (e) => this.setState({ newConsumableQty: e.target.value }),
+      newConsumableThreshold: s.newConsumableThreshold, onNewConsumableThresholdChange: (e) => this.setState({ newConsumableThreshold: e.target.value }),
+      newConsumableDisabled, newConsumableBtnStyle: enabledBtn(newConsumableDisabled), onAddConsumable: () => this.addConsumable(),
+
+      assetsAdminView,
+      newAssetCode: s.newAssetCode, onNewAssetCodeChange: (e) => this.setState({ newAssetCode: e.target.value }),
+      newAssetCategory: s.newAssetCategory, onNewAssetCategoryChange: (e) => this.setState({ newAssetCategory: e.target.value }),
+      newAssetName: s.newAssetName, onNewAssetNameChange: (e) => this.setState({ newAssetName: e.target.value }),
+      newAssetDisabled, newAssetBtnStyle: enabledBtn(newAssetDisabled), onAddAsset: () => this.addAsset(),
+
+      staffView,
+      newStaffName: s.newStaffName, onNewStaffNameChange: (e) => this.setState({ newStaffName: e.target.value }),
+      newStaffPhone: s.newStaffPhone, onNewStaffPhoneChange: (e) => this.setState({ newStaffPhone: e.target.value }),
+      newStaffPosition: s.newStaffPosition, onNewStaffPositionChange: (e) => this.setState({ newStaffPosition: e.target.value }),
+      newStaffDisabled, newStaffBtnStyle: enabledBtn(newStaffDisabled), onAddStaff: () => this.addStaff(),
+
+      // central store: requisitions & deliveries
+      requisitionsView: s.requisitions.map(rq => {
+        const lines = rq.lines.map(ln => {
+          const received = s.deliveries.filter(d => d.reqId === rq.id && d.lineId === ln.id).reduce((sum, d) => sum + d.qty, 0);
+          const remaining = Math.max(0, ln.qtyRequested - received);
+          const isDone = remaining <= 0;
+          const isRecording = s.deliveryFormReqId === rq.id && s.deliveryFormLineId === ln.id;
+          return { ...ln, received, remaining, isDone, remainColor: isDone ? '#34c471' : '#e0555f', isRecording,
+            onStartRecord: () => this.startRecordDelivery(rq.id, ln.id), onConfirmRecord: () => this.confirmRecordDelivery() };
+        });
+        const allDone = lines.every(l => l.isDone);
+        const anyReceived = lines.some(l => l.received > 0);
+        const status = allDone ? 'ครบแล้ว' : (anyReceived ? 'ได้รับบางส่วน' : 'รอรับของ');
+        const statusColor = allDone ? '#34c471' : (anyReceived ? '#f5a623' : '#8b94a3');
+        return { ...rq, lines, status, statusColor };
+      }),
+      newReqDocNo: s.newReqDocNo, onNewReqDocNoChange: (e) => this.setState({ newReqDocNo: e.target.value }),
+      newReqDate: s.newReqDate, onNewReqDateChange: (e) => this.setState({ newReqDate: e.target.value }),
+      newReqLineName: s.newReqLineName, onNewReqLineNameChange: (e) => this.setState({ newReqLineName: e.target.value }),
+      newReqLineCategory: s.newReqLineCategory, onNewReqLineCategoryChange: (e) => this.setState({ newReqLineCategory: e.target.value }),
+      newReqLineUnit: s.newReqLineUnit, onNewReqLineUnitChange: (e) => this.setState({ newReqLineUnit: e.target.value }),
+      newReqLineQty: s.newReqLineQty, onNewReqLineQtyChange: (e) => this.setState({ newReqLineQty: e.target.value }),
+      onAddReqLineDraft: () => this.addReqLineDraft(),
+      newReqLinesView: s.newReqLines.map((l, idx) => ({ ...l, onRemove: () => this.removeReqLineDraft(idx) })),
+      hasNewReqLines: s.newReqLines.length > 0, hasNoNewReqLines: s.newReqLines.length === 0,
+      createReqDisabled: !s.newReqDocNo || !s.newReqLines.length,
+      createReqBtnStyle: enabledBtn(!s.newReqDocNo || !s.newReqLines.length), onCreateRequisition: () => this.createRequisition(),
+
+      deliveryDraftQty: s.deliveryDraftQty, onDeliveryQtyChange: (e) => this.setState({ deliveryDraftQty: e.target.value }),
+      hasDeliveryPhoto: !!s.deliveryDraftPhoto, deliveryPhotoLabel: s.deliveryDraftPhoto ? 'แนบรูปแล้ว' : 'แนบรูป (ไม่บังคับ)',
+      deliveryPhotoPreviewStyle: `width:30px; height:30px; border-radius:6px; flex-shrink:0; background:center/cover no-repeat url('${s.deliveryDraftPhoto}');`,
+      onDeliveryPhotoChange: (e) => this.handlePhoto(e, 'deliveryDraftPhoto'),
+      onCancelRecord: () => this.cancelRecordDelivery(),
+
+      scrapDraftPhoto: s.scrapDraftPhoto, hasScrapDraftPhoto: !!s.scrapDraftPhoto,
+      scrapPhotoLabel: s.scrapDraftPhoto ? 'แนบรูปแล้ว' : 'ยังไม่ได้แนบรูป (จำเป็น)',
+      scrapPhotoPreviewStyle: `width:52px; height:52px; border-radius:8px; flex-shrink:0; background:center/cover no-repeat url('${s.scrapDraftPhoto}');`,
+      onScrapPhotoChange: (e) => this.handlePhoto(e, 'scrapDraftPhoto'),
+      scrapDraftNote: s.scrapDraftNote, onScrapNoteChange: (e) => this.setState({ scrapDraftNote: e.target.value }),
+      addScrapDisabled: !s.scrapDraftPhoto, addScrapBtnStyle: enabledBtn(!s.scrapDraftPhoto), onAddScrapReturn: () => this.addScrapReturn(),
+
+      scrapReturnsView: s.scrapReturns.map(sr => ({
+        ...sr,
+        statusLabel: sr.status === 'slip_received' ? 'ได้รับใบส่งคืนแล้ว' : 'รอใบส่งคืน',
+        statusColor: sr.status === 'slip_received' ? '#34c471' : '#f5a623',
+        isAwaiting: sr.status === 'awaiting_slip', isReceived: sr.status === 'slip_received',
+        thumbStyle: photoStyle(64, sr.photo),
+        editing: s.editingScrapIds.includes(sr.id), notEditing: !s.editingScrapIds.includes(sr.id),
+        onToggleEdit: () => this.toggleEditScrap(sr.id),
+        onSlipNoChange: (e) => this.updateScrapField(sr.id, 'slipNo', e.target.value),
+        onSlipDateChange: (e) => this.updateScrapField(sr.id, 'slipDate', e.target.value),
+        onConfirmSlip: () => this.confirmScrapSlip(sr.id),
+      })),
+
+      hasToast: !!s.toast, toastText: s.toast,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

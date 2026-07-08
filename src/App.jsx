@@ -1,0 +1,124 @@
+import { useState } from 'react';
+import { useStore } from './lib/useStore.js';
+import { toggleBtn, navBtn } from './lib/theme.js';
+import { DATA_KEYS } from './lib/seed.js';
+import Dashboard from './pages/Dashboard.jsx';
+import Request from './pages/Request.jsx';
+import Return from './pages/Return.jsx';
+import Tracker from './pages/Tracker.jsx';
+import Reports from './pages/Reports.jsx';
+import Central from './pages/Central.jsx';
+import Admin from './pages/Admin.jsx';
+import SheetSettings from './components/SheetSettings.jsx';
+
+export default function App() {
+  const { state, set, vals, showToast } = useStore();
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Replace persisted data keys with a snapshot pulled from the sheet.
+  const applyPulled = (data) => {
+    const patch = {};
+    for (const k of DATA_KEYS) if (data[k] !== undefined) patch[k] = data[k];
+    set(patch);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#1e2430', color: '#e9edf2', display: 'flex' }}>
+      {/* Sidebar */}
+      <aside
+        style={{
+          width: 236,
+          flexShrink: 0,
+          background: '#20262f',
+          borderRight: '1px solid #333b48',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '20px 14px',
+          gap: 18,
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 9, background: '#f5a623', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#1e2430', flexShrink: 0 }}>PP26</div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.1 }}>Store PP26</div>
+            <div style={{ fontSize: 10.5, color: '#8b94a3' }}>เบิก-คืนทรัพย์สินหน้างาน</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', background: '#2a303c', border: '1px solid #3a4150', borderRadius: 10, padding: 3 }}>
+          <button style={toggleBtn(state.role === 'staff')} onClick={() => vals.api.setRole('staff')}>
+            Staff
+          </button>
+          <button style={toggleBtn(state.role === 'admin')} onClick={() => vals.api.setRole('admin')}>
+            Store
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {vals.navItems.map((nav) => (
+            <button key={nav.key} style={navBtn(nav.active)} onClick={nav.onClick}>
+              <span>{nav.label}</span>
+              {nav.hasBadge ? (
+                <span style={{ background: '#f5a623', color: '#1e2430', fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: '1px 7px' }}>{nav.badgeText}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{ ...navBtn(false), border: '1px solid #333b48', justifyContent: 'flex-start', fontSize: 12.5 }}
+        >
+          ⚙️ เชื่อม Google Sheet
+        </button>
+
+        <div style={{ marginTop: 'auto', fontSize: 10.5, color: '#5c6472', padding: '0 4px' }}>
+          เมนูนี้ต่อยอดเพิ่มหน้าใหม่ได้ในอนาคต เช่น "รับเข้าจากสโตร์กลาง"
+        </div>
+      </aside>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0, padding: '28px 32px 60px', overflowY: 'auto' }}>
+        {vals.isDashboard && <Dashboard vals={vals} />}
+        {vals.isRequest && <Request vals={vals} />}
+        {vals.isReturn && <Return vals={vals} />}
+        {vals.isTracker && <Tracker vals={vals} />}
+        {vals.isReports && <Reports vals={vals} />}
+        {vals.isCentral && <Central vals={vals} />}
+        {vals.isAdmin && <Admin vals={vals} />}
+      </div>
+
+      {/* Toast */}
+      {state.toast ? (
+        <div
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: 26,
+            transform: 'translateX(-50%)',
+            background: '#2a303c',
+            border: '1px solid #4a5262',
+            color: '#e9edf2',
+            padding: '12px 20px',
+            borderRadius: 11,
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            animation: 'toastIn 0.2s ease',
+            zIndex: 100,
+          }}
+        >
+          {state.toast}
+        </div>
+      ) : null}
+
+      {showSettings && (
+        <SheetSettings onClose={() => setShowSettings(false)} state={state} onPulled={applyPulled} showToast={showToast} />
+      )}
+    </div>
+  );
+}
