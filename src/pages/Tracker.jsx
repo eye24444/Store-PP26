@@ -1,8 +1,9 @@
 import { card, pageTitle, pageSub } from '../components/ui.js';
 import { chipBtn } from '../lib/theme.js';
 import Thumb from '../components/Thumb.jsx';
+import ScrollX from '../components/ScrollX.jsx';
 
-export default function Tracker({ vals }) {
+export default function Tracker({ vals, isMobile }) {
   const { s, setState, selectedAsset } = vals;
 
   return (
@@ -27,31 +28,33 @@ export default function Tracker({ vals }) {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 1fr', gap: 18 }}>
-        <div style={{ ...card, maxHeight: 520, overflowY: 'auto' }}>
-          <div style={{ ...trackGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700, position: 'sticky', top: 0 }}>
-            <div>รูป</div>
-            <div>รหัส</div>
-            <div>ชื่อ</div>
-            <div>สถานะ</div>
-            <div>ถืออยู่กับ</div>
-          </div>
-          {vals.filteredAssets.map((a) => (
-            <div
-              key={a.id}
-              onClick={a.onSelect}
-              style={{ ...trackGrid, padding: '10px 16px', borderTop: '1px solid #333b48', fontSize: 13, cursor: 'pointer', alignItems: 'center' }}
-            >
-              <Thumb size={40} photo={a.photo} />
-              <div style={{ fontWeight: 700 }}>{a.code}</div>
-              <div>{a.name}</div>
-              <div style={{ color: a.statusColor, fontWeight: 600 }}>{a.statusLabel}</div>
-              <div style={{ color: '#8b94a3' }}>{a.holderName}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr 1fr 1fr', gap: 18 }}>
+        <div style={{ ...card, maxHeight: isMobile ? 360 : 520, overflowY: 'auto' }}>
+          <ScrollX minWidth={isMobile ? 460 : 0}>
+            <div style={{ ...trackGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700, position: 'sticky', top: 0 }}>
+              <div>รูป</div>
+              <div>รหัส</div>
+              <div>ชื่อ</div>
+              <div>สถานะ</div>
+              <div>ถืออยู่กับ</div>
             </div>
-          ))}
+            {vals.filteredAssets.map((a) => (
+              <div
+                key={a.id}
+                onClick={a.onSelect}
+                style={{ ...trackGrid, padding: '10px 16px', borderTop: '1px solid #333b48', fontSize: 13, cursor: 'pointer', alignItems: 'center' }}
+              >
+                <Thumb size={40} photo={a.photo} />
+                <div style={{ fontWeight: 700 }}>{a.code}</div>
+                <div>{a.name}</div>
+                <div style={{ color: a.statusColor, fontWeight: 600 }}>{a.statusLabel}</div>
+                <div style={{ color: '#8b94a3' }}>{a.holderName}</div>
+              </div>
+            ))}
+          </ScrollX>
         </div>
 
-        <div style={{ gridColumn: 'span 3' }}>
+        <div style={{ gridColumn: isMobile ? 'auto' : 'span 3' }}>
           {selectedAsset ? (
             <div style={{ ...card, padding: 22 }}>
               <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 14 }}>

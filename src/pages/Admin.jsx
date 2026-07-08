@@ -1,6 +1,7 @@
 import { card, pageTitle, pageSub, smallLabel } from '../components/ui.js';
 import { smallToggleBtn, enabledBtn, smallFieldStyle } from '../lib/theme.js';
 import Thumb from '../components/Thumb.jsx';
+import ScrollX from '../components/ScrollX.jsx';
 
 const editInput = { padding: '7px 9px', borderRadius: 7, background: '#2f3644', border: '1px solid #3a4150', color: '#e9edf2', fontFamily: 'inherit', fontSize: 12.5, width: '100%' };
 const iconBtn = (bg, color, border) => ({ border: border || 'none', background: bg, color, borderRadius: 7, padding: '0 9px', height: 28, cursor: 'pointer', fontSize: 11.5, fontFamily: 'inherit' });
@@ -90,6 +91,7 @@ function ConsumablesTab({ vals }) {
   return (
     <>
       <div style={{ ...card, marginBottom: 18 }}>
+        <ScrollX minWidth={780}>
         <div style={{ ...grid, padding: '12px 16px', background: '#2a303c', fontSize: 11.5, color: '#8b94a3', fontWeight: 700 }}>
           <div>รูป</div>
           <div>รหัส</div>
@@ -131,6 +133,7 @@ function ConsumablesTab({ vals }) {
             </div>
           </div>
         ))}
+        </ScrollX>
       </div>
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>เพิ่มรายการวัสดุสิ้นเปลืองใหม่</div>
@@ -157,6 +160,7 @@ function AssetsTab({ vals }) {
   return (
     <>
       <div style={{ ...card, marginBottom: 18 }}>
+        <ScrollX minWidth={760}>
         <div style={{ ...grid, padding: '12px 16px', background: '#2a303c', fontSize: 11.5, color: '#8b94a3', fontWeight: 700 }}>
           <div>รูป</div>
           <div>รหัส</div>
@@ -194,6 +198,7 @@ function AssetsTab({ vals }) {
             </div>
           </div>
         ))}
+        </ScrollX>
       </div>
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>เพิ่มทรัพย์สินใหม่</div>
@@ -217,6 +222,7 @@ function StaffTab({ vals }) {
   return (
     <>
       <div style={{ ...card, marginBottom: 18 }}>
+        <ScrollX minWidth={560}>
         <div style={{ ...grid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700 }}>
           <div>รูป</div>
           <div>ชื่อ</div>
@@ -240,6 +246,7 @@ function StaffTab({ vals }) {
             </div>
           </div>
         ))}
+        </ScrollX>
       </div>
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>เพิ่มพนักงานใหม่</div>

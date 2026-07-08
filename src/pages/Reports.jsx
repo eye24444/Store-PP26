@@ -1,5 +1,6 @@
 import { card, pageTitle, pageSub, sectionTitle } from '../components/ui.js';
 import { activeBtn } from '../lib/theme.js';
+import ScrollX from '../components/ScrollX.jsx';
 
 export default function Reports({ vals }) {
   const { s, setState } = vals;
@@ -21,7 +22,7 @@ export default function Reports({ vals }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 18, marginBottom: 24 }}>
         <div style={{ ...card, padding: 18 }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>เบิกมากที่สุด (ตามบุคคล)</div>
           {vals.topPersons.map((p) => (
@@ -50,15 +51,17 @@ export default function Reports({ vals }) {
             </div>
             {d.expanded && (
               <div style={{ borderTop: '1px solid #333b48' }}>
-                {d.items.map((t) => (
-                  <div key={t.key} style={{ ...dailyGrid, padding: '10px 18px', borderTop: '1px solid #2c323e', fontSize: 12.5 }}>
-                    <div style={{ color: t.actionColor, fontWeight: 600 }}>{t.action}</div>
-                    <div>{t.person}</div>
-                    <div>{t.item}</div>
-                    <div style={{ color: '#8b94a3' }}>{t.job}</div>
-                    <div style={{ color: '#8b94a3' }}>{t.costCode}</div>
-                  </div>
-                ))}
+                <ScrollX minWidth={560}>
+                  {d.items.map((t) => (
+                    <div key={t.key} style={{ ...dailyGrid, padding: '10px 18px', borderTop: '1px solid #2c323e', fontSize: 12.5 }}>
+                      <div style={{ color: t.actionColor, fontWeight: 600 }}>{t.action}</div>
+                      <div>{t.person}</div>
+                      <div>{t.item}</div>
+                      <div style={{ color: '#8b94a3' }}>{t.job}</div>
+                      <div style={{ color: '#8b94a3' }}>{t.costCode}</div>
+                    </div>
+                  ))}
+                </ScrollX>
               </div>
             )}
           </div>
@@ -67,24 +70,26 @@ export default function Reports({ vals }) {
 
       <div style={sectionTitle}>ประวัติการเบิก-คืนทั้งหมด</div>
       <div style={card}>
-        <div style={{ ...txGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700 }}>
-          <div>วันที่</div>
-          <div>บุคคล</div>
-          <div>รายการ</div>
-          <div>ของ</div>
-          <div>งาน/หน่วยงาน</div>
-          <div>Cost Code</div>
-        </div>
-        {vals.transactionsView.map((t) => (
-          <div key={t.key} style={{ ...txGrid, padding: '11px 16px', borderTop: '1px solid #333b48', fontSize: 13 }}>
-            <div>{t.date}</div>
-            <div>{t.person}</div>
-            <div style={{ color: t.actionColor, fontWeight: 600 }}>{t.action}</div>
-            <div>{t.item}</div>
-            <div style={{ color: '#8b94a3' }}>{t.job}</div>
-            <div style={{ color: '#8b94a3' }}>{t.costCode}</div>
+        <ScrollX minWidth={680}>
+          <div style={{ ...txGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700 }}>
+            <div>วันที่</div>
+            <div>บุคคล</div>
+            <div>รายการ</div>
+            <div>ของ</div>
+            <div>งาน/หน่วยงาน</div>
+            <div>Cost Code</div>
           </div>
-        ))}
+          {vals.transactionsView.map((t) => (
+            <div key={t.key} style={{ ...txGrid, padding: '11px 16px', borderTop: '1px solid #333b48', fontSize: 13 }}>
+              <div>{t.date}</div>
+              <div>{t.person}</div>
+              <div style={{ color: t.actionColor, fontWeight: 600 }}>{t.action}</div>
+              <div>{t.item}</div>
+              <div style={{ color: '#8b94a3' }}>{t.job}</div>
+              <div style={{ color: '#8b94a3' }}>{t.costCode}</div>
+            </div>
+          ))}
+        </ScrollX>
       </div>
     </div>
   );

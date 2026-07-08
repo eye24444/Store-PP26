@@ -2,6 +2,7 @@ import { card, pageTitle, pageSub, sectionTitle, smallLabel, fieldLabel } from '
 import { fieldStyle, smallFieldStyle, enabledBtn } from '../lib/theme.js';
 import Thumb from '../components/Thumb.jsx';
 import PhotoDropzone from '../components/PhotoDropzone.jsx';
+import ScrollX from '../components/ScrollX.jsx';
 
 export default function Central({ vals }) {
   const { s, api, setState, isAdminRole } = vals;
@@ -78,6 +79,7 @@ export default function Central({ vals }) {
               </div>
               <div style={{ color: rq.statusColor, fontWeight: 700, fontSize: 13 }}>{rq.status}</div>
             </div>
+            <ScrollX minWidth={620}>
             <div style={{ ...reqGrid, padding: '10px 18px', fontSize: 11.5, color: '#8b94a3', fontWeight: 700, borderTop: '1px solid #333b48' }}>
               <div>รายการ</div>
               <div>ประเภท</div>
@@ -128,6 +130,7 @@ export default function Central({ vals }) {
                 )}
               </div>
             ))}
+            </ScrollX>
           </div>
         ))}
       </div>

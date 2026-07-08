@@ -1,4 +1,5 @@
 import { card, pageTitle, pageSub, sectionTitle } from '../components/ui.js';
+import ScrollX from '../components/ScrollX.jsx';
 
 export default function Dashboard({ vals }) {
   return (
@@ -26,26 +27,28 @@ export default function Dashboard({ vals }) {
       {/* assets by category */}
       <div style={sectionTitle}>ทรัพย์สินแยกตามประเภท</div>
       <div style={{ ...card, marginBottom: 26 }}>
-        <div style={{ ...assetGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700 }}>
-          <div>ประเภท</div>
-          <div>ทั้งหมด</div>
-          <div>พร้อมเบิก</div>
-          <div>ใช้งานอยู่</div>
-          <div>ส่งซ่อม</div>
-          <div>ชำรุด</div>
-          <div>รหัสทั้งหมด</div>
-        </div>
-        {vals.assetGroups.map((g) => (
-          <div key={g.category} style={{ ...assetGrid, padding: '12px 16px', borderTop: '1px solid #333b48', fontSize: 13, alignItems: 'center' }}>
-            <div style={{ fontWeight: 700 }}>{g.category}</div>
-            <div>{g.total}</div>
-            <div style={{ color: '#34c471', fontWeight: 700 }}>{g.available}</div>
-            <div style={{ color: '#f5a623', fontWeight: 700 }}>{g.inUse}</div>
-            <div style={{ color: '#4a90d9' }}>{g.repair}</div>
-            <div style={{ color: '#e0555f' }}>{g.damaged}</div>
-            <div style={{ color: '#8b94a3', fontSize: 11 }}>{g.codesText}</div>
+        <ScrollX minWidth={640}>
+          <div style={{ ...assetGrid, padding: '12px 16px', background: '#2a303c', fontSize: 12, color: '#8b94a3', fontWeight: 700 }}>
+            <div>ประเภท</div>
+            <div>ทั้งหมด</div>
+            <div>พร้อมเบิก</div>
+            <div>ใช้งานอยู่</div>
+            <div>ส่งซ่อม</div>
+            <div>ชำรุด</div>
+            <div>รหัสทั้งหมด</div>
           </div>
-        ))}
+          {vals.assetGroups.map((g) => (
+            <div key={g.category} style={{ ...assetGrid, padding: '12px 16px', borderTop: '1px solid #333b48', fontSize: 13, alignItems: 'center' }}>
+              <div style={{ fontWeight: 700 }}>{g.category}</div>
+              <div>{g.total}</div>
+              <div style={{ color: '#34c471', fontWeight: 700 }}>{g.available}</div>
+              <div style={{ color: '#f5a623', fontWeight: 700 }}>{g.inUse}</div>
+              <div style={{ color: '#4a90d9' }}>{g.repair}</div>
+              <div style={{ color: '#e0555f' }}>{g.damaged}</div>
+              <div style={{ color: '#8b94a3', fontSize: 11 }}>{g.codesText}</div>
+            </div>
+          ))}
+        </ScrollX>
       </div>
 
       {/* consumables by category */}
