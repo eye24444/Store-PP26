@@ -11,6 +11,26 @@ import { DATA_KEYS } from './seed.js';
 
 const DATA_KEY = 'store_pp26_data_v1';
 const SHEET_URL_KEY = 'store_pp26_sheet_url';
+const PIN_KEY = 'store_pp26_admin_pin';
+const DEFAULT_PIN = '2626';
+
+// 4-digit PIN that gates the Store (admin) mode. Stored locally per device so
+// it never has to live in the shared/public Google Sheet.
+export function getAdminPin() {
+  try {
+    return localStorage.getItem(PIN_KEY) || DEFAULT_PIN;
+  } catch {
+    return DEFAULT_PIN;
+  }
+}
+
+export function setAdminPin(pin) {
+  try {
+    localStorage.setItem(PIN_KEY, pin);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function loadData() {
   try {

@@ -9,13 +9,22 @@ import Return from './pages/Return.jsx';
 import Tracker from './pages/Tracker.jsx';
 import Reports from './pages/Reports.jsx';
 import Central from './pages/Central.jsx';
+import GoodsIn from './pages/GoodsIn.jsx';
 import Admin from './pages/Admin.jsx';
 import SheetSettings from './components/SheetSettings.jsx';
+import PinModal from './components/PinModal.jsx';
 
 export default function App() {
   const { state, set, vals, showToast } = useStore();
   const [showSettings, setShowSettings] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const isMobile = useIsMobile();
+
+  // Entering Store (admin) mode requires the 4-digit PIN; leaving to Staff is free.
+  const requestAdmin = () => {
+    if (state.role === 'admin') return;
+    setShowPin(true);
+  };
 
   // Replace persisted data keys with a snapshot pulled from the sheet.
   const applyPulled = (data) => {
@@ -46,8 +55,8 @@ export default function App() {
       <button style={toggleBtn(state.role === 'staff')} onClick={() => vals.api.setRole('staff')}>
         Staff
       </button>
-      <button style={toggleBtn(state.role === 'admin')} onClick={() => vals.api.setRole('admin')}>
-        Store
+      <button style={toggleBtn(state.role === 'admin')} onClick={requestAdmin}>
+        Store {state.role === 'admin' ? '' : '🔒'}
       </button>
     </div>
   );
@@ -130,6 +139,7 @@ export default function App() {
         {vals.isReturn && <Return vals={vals} />}
         {vals.isTracker && <Tracker vals={vals} isMobile={isMobile} />}
         {vals.isReports && <Reports vals={vals} />}
+        {vals.isGoodsIn && <GoodsIn vals={vals} />}
         {vals.isCentral && <Central vals={vals} />}
         {vals.isAdmin && <Admin vals={vals} />}
       </div>
@@ -160,6 +170,18 @@ export default function App() {
 
       {showSettings && (
         <SheetSettings onClose={() => setShowSettings(false)} state={state} onPulled={applyPulled} showToast={showToast} />
+      )}
+
+      {showPin && (
+        <PinModal
+          onClose={() => setShowPin(false)}
+          onSuccess={() => {
+            vals.api.setRole('admin');
+            setShowPin(false);
+            setDrawerOpen(false);
+          }}
+          showToast={showToast}
+        />
       )}
     </div>
   );

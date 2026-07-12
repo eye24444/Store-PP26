@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { STATUS_META, COND_COLORS, COND_LABELS } from './theme.js';
-import { buildInitialState, genId, todayStr, nowStr } from './seed.js';
-import { loadData, saveData } from './storage.js';
+import { buildInitialState, genId, todayStr, nowStr, DATA_KEYS } from './seed.js';
+import { loadData, saveData, getSheetUrl, pullFromSheet, pushToSheet } from './storage.js';
 
 // Central store. Mirrors the DCLogic class from Store PP26.dc.html:
 // - `state` holds everything
@@ -34,6 +34,59 @@ export function useStore() {
   useEffect(() => {
     saveData(state);
   }, [state]);
+
+  // ---- Google Sheet sync (Sheet = source of truth when connected) ----
+  // 'init' until the first pull settles, so we never push stale local data over
+  // the sheet before we've loaded from it.
+  const syncPhase = useRef('init');
+  const pushTimer = useRef(null);
+
+  // On startup: if a Sheet is connected, pull from it so edits made directly in
+  // the Google Sheet show up in the app.
+  useEffect(() => {
+    const url = getSheetUrl();
+    if (!url) {
+      syncPhase.current = 'ready';
+      return;
+    }
+    let cancelled = false;
+    pullFromSheet(url)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const patch = {};
+        for (const k of DATA_KEYS) if (data[k] !== undefined) patch[k] = data[k];
+        set(patch);
+        showToast('ซิงก์ข้อมูลจาก Google Sheet แล้ว');
+      })
+      .catch(() => {
+        /* offline / not reachable — keep working from localStorage */
+      })
+      .finally(() => {
+        // Let the pulled state settle before enabling auto-push.
+        setTimeout(() => {
+          syncPhase.current = 'ready';
+        }, 400);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-save data changes back to the Sheet (debounced) so the app and the
+  // Sheet stay in sync without a manual button press.
+  const dataSlice = DATA_KEYS.map((k) => state[k]);
+  useEffect(() => {
+    const url = getSheetUrl();
+    if (!url || syncPhase.current !== 'ready') return;
+    clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(() => {
+      pushToSheet(url, state).catch(() => {});
+    }, 2500);
+    return () => clearTimeout(pushTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, dataSlice);
 
   const api = buildActions(state, set, showToast);
   const vals = deriveVals(state, api, set);
@@ -200,6 +253,57 @@ function buildActions(state, setState, showToast) {
     showToast('เพิ่มพนักงานแล้ว');
   };
 
+  // --- goods receiving (รับของเข้า) ---
+  const addReceiptLine = () => {
+    if (s.rcDraftType === 'consumable') {
+      if (!s.rcDraftConsumableId || Number(s.rcDraftQty) <= 0) return;
+      setState({ rcCart: [...s.rcCart, { refType: 'consumable', consumableId: s.rcDraftConsumableId, qty: Number(s.rcDraftQty) || 1 }], rcDraftConsumableId: '', rcDraftQty: 1 });
+    } else {
+      if (!s.rcDraftAssetCategory || !s.rcDraftAssetName || Number(s.rcDraftAssetQty) <= 0) return;
+      setState({ rcCart: [...s.rcCart, { refType: 'asset', category: s.rcDraftAssetCategory, name: s.rcDraftAssetName, qty: Number(s.rcDraftAssetQty) || 1 }], rcDraftAssetCategory: '', rcDraftAssetName: '', rcDraftAssetQty: 1 });
+    }
+  };
+  const removeReceiptLine = (idx) => setState((st) => ({ rcCart: st.rcCart.filter((_, i) => i !== idx) }));
+
+  const submitReceipt = () => {
+    if (!s.rcCart.length) return;
+    const date = s.rcDate || todayStr();
+    let consumables = s.consumables, assets = s.assets;
+    const newTx = [];
+    const receiptLines = [];
+
+    s.rcCart.forEach((line) => {
+      if (line.refType === 'consumable') {
+        const c = consumables.find((x) => x.id === line.consumableId);
+        const name = c ? c.name : 'วัสดุ';
+        const unit = c ? c.unit : '';
+        consumables = consumables.map((x) => (x.id === line.consumableId ? { ...x, qty: x.qty + line.qty } : x));
+        receiptLines.push({ type: 'วัสดุสิ้นเปลือง', label: name, qtyText: line.qty + ' ' + unit });
+        newTx.push({ date, person: 'ผู้ดูแลสโตร์', action: 'รับเข้า', item: name + ' x' + line.qty, job: '-', costCode: '-' });
+      } else {
+        const codes = [];
+        const created = [];
+        for (let i = 0; i < line.qty; i++) {
+          const code = genId((line.category || 'AST').slice(0, 3).toUpperCase() + '-');
+          codes.push(code);
+          created.push({ id: genId('a'), code, category: line.category, name: line.name, status: 'available', holderStaffId: null, site: 'สโตร์กลาง', costCode: null, date: null, photo: '' });
+        }
+        assets = [...assets, ...created];
+        receiptLines.push({ type: 'ทรัพย์สิน', label: line.category + ' · ' + line.name, qtyText: line.qty + ' ชิ้น', codesText: codes.join(', ') });
+        newTx.push({ date, person: 'ผู้ดูแลสโตร์', action: 'รับเข้า', item: line.category + ' ' + line.name + ' x' + line.qty, job: '-', costCode: '-' });
+      }
+    });
+
+    const receipt = { id: genId('rc'), date, note: s.rcNote, photo: s.rcPhoto, lines: receiptLines };
+    setState({
+      consumables, assets,
+      receipts: [receipt, ...s.receipts],
+      transactions: [...newTx, ...s.transactions],
+      rcCart: [], rcNote: '', rcPhoto: '',
+    });
+    showToast('บันทึกรับของเข้าแล้ว (' + receiptLines.length + ' รายการ)');
+  };
+
   // --- central store: requisitions & delivery ---
   const addReqLineDraft = () => {
     if (!s.newReqLineName || !s.newReqLineUnit) return;
@@ -266,6 +370,7 @@ function buildActions(state, setState, showToast) {
     adjustConsumable, toggleEditConsumable, updateConsumableField, deleteConsumable, addConsumable,
     toggleEditAsset, updateAssetField, deleteAsset, addAsset,
     toggleEditStaff, updateStaffField, deleteStaff, addStaff,
+    addReceiptLine, removeReceiptLine, submitReceipt,
     addReqLineDraft, removeReqLineDraft, createRequisition,
     startRecordDelivery, cancelRecordDelivery, confirmRecordDelivery,
     addScrapReturn, toggleEditScrap, updateScrapField, confirmScrapSlip,
@@ -455,6 +560,7 @@ function deriveVals(s, api, setState) {
     { key: 'return', label: 'คืนของ', active: s.page === 'return', onClick: () => api.setPage('return') },
     { key: 'tracker', label: 'ติดตามทรัพย์สิน', active: s.page === 'tracker', onClick: () => api.setPage('tracker') },
     { key: 'reports', label: 'รายงานสรุป', active: s.page === 'reports', onClick: () => api.setPage('reports') },
+    { key: 'goodsin', label: 'รับของเข้า', active: s.page === 'goodsin', onClick: () => api.setPage('goodsin') },
     { key: 'central', label: 'รับเข้า/คืนสโตร์กลาง', active: s.page === 'central', onClick: () => api.setPage('central') },
   ];
   if (isAdminRole) navItems.push({ key: 'admin', label: 'ผู้ดูแลสโตร์', active: s.page === 'admin', onClick: () => api.setPage('admin'), hasBadge: pendingCount > 0, badgeText: pendingCount });
@@ -491,11 +597,38 @@ function deriveVals(s, api, setState) {
   const newAssetDisabled = !s.newAssetCode || !s.newAssetName;
   const newStaffDisabled = !s.newStaffName;
 
+  // --- goods receiving views ---
+  const rcCartView = s.rcCart.map((line, idx) => {
+    if (line.refType === 'consumable') {
+      const c = s.consumables.find((x) => x.id === line.consumableId);
+      return { key: 'c' + idx, typeLabel: 'ของสิ้นเปลือง', label: c ? c.name : '', qtyText: line.qty + ' ' + (c ? c.unit : ''), onRemove: () => api.removeReceiptLine(idx) };
+    }
+    return { key: 'a' + idx, typeLabel: 'ทรัพย์สิน', label: line.category + ' · ' + line.name, qtyText: line.qty + ' ชิ้น', onRemove: () => api.removeReceiptLine(idx) };
+  });
+  const rcAddDisabled =
+    s.rcDraftType === 'consumable'
+      ? !s.rcDraftConsumableId || Number(s.rcDraftQty) <= 0
+      : !s.rcDraftAssetCategory || !s.rcDraftAssetName || Number(s.rcDraftAssetQty) <= 0;
+  const rcSubmitDisabled = !s.rcCart.length || !s.rcDate;
+  const receiptsView = s.receipts.map((r) => {
+    const totalQty = r.lines.reduce((sum, l) => sum + (parseInt(l.qtyText, 10) || 0), 0);
+    const expanded = s.expandedReceiptId === r.id;
+    return {
+      ...r,
+      lineCountText: r.lines.length + ' รายการ',
+      totalText: 'รวม ' + totalQty + ' หน่วย',
+      expanded,
+      arrow: expanded ? '▲' : '▼',
+      onToggle: () => setState({ expandedReceiptId: expanded ? null : r.id }),
+    };
+  });
+
   return {
     api, setState, s,
     isAdminRole, pendingCount, navItems,
     isDashboard: s.page === 'dashboard', isRequest: s.page === 'request', isReturn: s.page === 'return',
-    isTracker: s.page === 'tracker', isReports: s.page === 'reports', isCentral: s.page === 'central', isAdmin: s.page === 'admin' && isAdminRole,
+    isTracker: s.page === 'tracker', isReports: s.page === 'reports', isCentral: s.page === 'central',
+    isGoodsIn: s.page === 'goodsin', isAdmin: s.page === 'admin' && isAdminRole,
 
     consumableTypeCount: s.consumables.length, lowStockCount: lowStockItems.length, assetTotalCount: s.assets.length,
     countAvailable: s.assets.filter((a) => a.status === 'available').length,
@@ -516,5 +649,6 @@ function deriveVals(s, api, setState) {
     newConsumableDisabled, newAssetDisabled, newStaffDisabled,
 
     requisitionsView, scrapReturnsView,
+    rcCartView, rcAddDisabled, rcSubmitDisabled, receiptsView,
   };
 }

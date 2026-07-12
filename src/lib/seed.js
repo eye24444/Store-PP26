@@ -84,6 +84,14 @@ export function buildInitialState() {
       { date: '06/07/2026', person: 'นายอานันท์ พูลสวัสดิ์', action: 'เบิก', item: 'เหล็กเส้น DB20 x40', job: 'Steel Bay', costCode: 'CC-018' },
     ],
 
+    // --- goods receiving (รับของเข้า) ---
+    receipts: [],
+    rcDraftType: 'consumable',
+    rcDraftConsumableId: '', rcDraftQty: 1,
+    rcDraftAssetCategory: '', rcDraftAssetName: '', rcDraftAssetQty: 1,
+    rcDate: '07/07/2026', rcNote: '', rcCart: [], rcPhoto: '',
+    expandedReceiptId: null,
+
     reqStaffId: '', reqJob: '', reqCostCode: '', reqPhoto: '',
     reqDraftType: 'asset', reqDraftAssetId: '', reqDraftConsumableId: '', reqDraftQty: 1,
     reqCart: [],
@@ -134,4 +142,5 @@ export const DATA_KEYS = [
   'requisitions',
   'deliveries',
   'scrapReturns',
+  'receipts',
 ];
