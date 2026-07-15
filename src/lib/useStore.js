@@ -313,6 +313,10 @@ function buildActions(state, setState, showToast) {
     });
   };
   const removeReqLineDraft = (idx) => setState((st) => ({ newReqLines: st.newReqLines.filter((_, i) => i !== idx) }));
+  const deleteRequisition = (id) => {
+    setState((st) => ({ requisitions: st.requisitions.filter((r) => r.id !== id), deliveries: st.deliveries.filter((d) => d.reqId !== id) }));
+    showToast('ลบใบขอใช้แล้ว');
+  };
   const createRequisition = () => {
     if (!s.newReqDocNo || !s.newReqLines.length) return;
     setState({
@@ -362,6 +366,14 @@ function buildActions(state, setState, showToast) {
     showToast('บันทึกรับใบส่งคืนแล้ว');
   };
 
+  // Wipe all data collections (start fresh). Empties every DATA_KEYS list.
+  const resetAllData = () => {
+    const patch = {};
+    DATA_KEYS.forEach((k) => { patch[k] = []; });
+    setState(patch);
+    showToast('ล้างข้อมูลทั้งหมดแล้ว เริ่มจากศูนย์');
+  };
+
   return {
     handlePhoto, handleItemPhoto, setRole, setPage,
     addReqLine, removeReqLine, submitRequest,
@@ -371,8 +383,9 @@ function buildActions(state, setState, showToast) {
     toggleEditAsset, updateAssetField, deleteAsset, addAsset,
     toggleEditStaff, updateStaffField, deleteStaff, addStaff,
     addReceiptLine, removeReceiptLine, submitReceipt,
-    addReqLineDraft, removeReqLineDraft, createRequisition,
+    addReqLineDraft, removeReqLineDraft, createRequisition, deleteRequisition,
     startRecordDelivery, cancelRecordDelivery, confirmRecordDelivery,
+    resetAllData,
     addScrapReturn, toggleEditScrap, updateScrapField, confirmScrapSlip,
   };
 }
@@ -577,7 +590,7 @@ function deriveVals(s, api, setState) {
     const anyReceived = lines.some((l) => l.received > 0);
     const status = allDone ? 'ครบแล้ว' : anyReceived ? 'ได้รับบางส่วน' : 'รอรับของ';
     const statusColor = allDone ? '#34c471' : anyReceived ? '#f5a623' : '#8b94a3';
-    return { ...rq, lines, status, statusColor };
+    return { ...rq, lines, status, statusColor, onDelete: () => api.deleteRequisition(rq.id) };
   });
 
   const scrapReturnsView = s.scrapReturns.map((sr) => ({

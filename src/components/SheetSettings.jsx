@@ -5,7 +5,7 @@ import { fieldStyle, enabledBtn } from '../lib/theme.js';
 
 // Optional Google Sheet sync configuration. Free path: a Google Apps Script
 // Web App (see google-sheet/Code.gs) acts as the read/write endpoint.
-export default function SheetSettings({ onClose, state, onPulled, showToast }) {
+export default function SheetSettings({ onClose, state, onPulled, showToast, onReset }) {
   const [url, setUrl] = useState(getSheetUrl());
   const [busy, setBusy] = useState('');
 
@@ -82,6 +82,26 @@ export default function SheetSettings({ onClose, state, onPulled, showToast }) {
           </button>
           <button style={enabledBtn(busy === 'pull')} disabled={busy === 'pull'} onClick={doPull}>
             {busy === 'pull' ? 'กำลังดึง…' : 'ดึงข้อมูลจาก Sheet'}
+          </button>
+        </div>
+
+        {/* Danger zone: clear all sample/mock data to start fresh */}
+        <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #333b48' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#e0555f', marginBottom: 4 }}>ล้างข้อมูลตัวอย่าง</div>
+          <div style={{ fontSize: 12, color: '#8b94a3', marginBottom: 12, lineHeight: 1.6 }}>
+            ลบข้อมูลตัวอย่างทั้งหมด (ของ ทรัพย์สิน พนักงาน ประวัติ ใบขอใช้ ฯลฯ) เพื่อเริ่มกรอกข้อมูลจริงจากศูนย์ —
+            ทำแล้วย้อนกลับไม่ได้ ถ้าเชื่อม Sheet ไว้ ข้อมูลใน Sheet จะถูกล้างตามด้วย
+          </div>
+          <button
+            onClick={() => {
+              if (window.confirm('ยืนยันล้างข้อมูลทั้งหมด? เริ่มจากศูนย์ (ย้อนกลับไม่ได้)')) {
+                onReset();
+                onClose();
+              }
+            }}
+            style={{ border: '1px solid #e0555f', background: 'transparent', color: '#e0555f', borderRadius: 9, padding: '10px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}
+          >
+            ล้างข้อมูลทั้งหมด เริ่มใหม่
           </button>
         </div>
       </div>

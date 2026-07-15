@@ -169,7 +169,7 @@ export default function App() {
       ) : null}
 
       {showSettings && (
-        <SheetSettings onClose={() => setShowSettings(false)} state={state} onPulled={applyPulled} showToast={showToast} />
+        <SheetSettings onClose={() => setShowSettings(false)} state={state} onPulled={applyPulled} showToast={showToast} onReset={vals.api.resetAllData} />
       )}
 
       {showPin && (

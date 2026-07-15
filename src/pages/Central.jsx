@@ -77,7 +77,17 @@ export default function Central({ vals }) {
                 <div style={{ fontWeight: 800, fontSize: 14.5 }}>ใบขอใช้เลขที่ {rq.docNo}</div>
                 <div style={{ fontSize: 11.5, color: '#8b94a3' }}>วันที่ {rq.date}</div>
               </div>
-              <div style={{ color: rq.statusColor, fontWeight: 700, fontSize: 13 }}>{rq.status}</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ color: rq.statusColor, fontWeight: 700, fontSize: 13 }}>{rq.status}</div>
+                {isAdminRole && (
+                  <button
+                    onClick={() => { if (window.confirm('ลบใบขอใช้เลขที่ ' + rq.docNo + ' ?')) rq.onDelete(); }}
+                    style={{ border: 'none', background: '#e0555f', color: '#fff', borderRadius: 7, padding: '5px 10px', height: 28, cursor: 'pointer', fontSize: 11.5, fontFamily: 'inherit' }}
+                  >
+                    ลบ
+                  </button>
+                )}
+              </div>
             </div>
             <ScrollX minWidth={620}>
             <div style={{ ...reqGrid, padding: '10px 18px', fontSize: 11.5, color: '#8b94a3', fontWeight: 700, borderTop: '1px solid #333b48' }}>
