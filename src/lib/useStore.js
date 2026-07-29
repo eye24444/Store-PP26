@@ -40,6 +40,12 @@ export function useStore() {
   // the sheet before we've loaded from it.
   const syncPhase = useRef('init');
   const pushTimer = useRef(null);
+  // True right before we apply data pulled from the sheet, so the auto-push
+  // effect can skip echoing that same data straight back up.
+  const applyingRemote = useRef(false);
+  // Always points at the latest state, for use inside the polling interval.
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   // On startup: if a Sheet is connected, pull from it so edits made directly in
   // the Google Sheet show up in the app.
@@ -80,6 +86,8 @@ export function useStore() {
   useEffect(() => {
     const url = getSheetUrl();
     if (!url || syncPhase.current !== 'ready') return;
+    // Don't echo data we just pulled from the sheet back up to it.
+    if (applyingRemote.current) { applyingRemote.current = false; return; }
     clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
       pushToSheet(url, state).catch(() => {});
@@ -87,6 +95,42 @@ export function useStore() {
     return () => clearTimeout(pushTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dataSlice);
+
+  // Near-real-time: re-pull from the sheet every ~10s so edits made by other
+  // people (or directly in the sheet) show up without a manual refresh. Skips
+  // while this user is mid-edit, and only applies keys that actually changed —
+  // so it never clobbers what they're typing or triggers an echo push.
+  useEffect(() => {
+    const url = getSheetUrl();
+    if (!url) return;
+    const id = setInterval(() => {
+      if (syncPhase.current !== 'ready') return;
+      const cur = stateRef.current;
+      if (cur.editingStaffIds.length || cur.editingConsumableIds.length ||
+          cur.editingAssetIds.length || cur.editingScrapIds.length) return;
+      pullFromSheet(url)
+        .then((data) => {
+          if (!data) return;
+          const now = stateRef.current;
+          const patch = {};
+          let changed = false;
+          for (const k of DATA_KEYS) {
+            if (data[k] !== undefined && JSON.stringify(data[k]) !== JSON.stringify(now[k])) {
+              patch[k] = data[k];
+              changed = true;
+            }
+          }
+          if (changed) {
+            applyingRemote.current = true;
+            set(patch);
+          }
+        })
+        .catch(() => {});
+    }, 10000);
+    return () => clearInterval(id);
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const api = buildActions(state, set, showToast);
   const vals = deriveVals(state, api, set);
