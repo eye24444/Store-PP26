@@ -40,19 +40,6 @@ export function useStore() {
   // the sheet before we've loaded from it.
   const syncPhase = useRef('init');
   const pushTimer = useRef(null);
-  // True right before we apply data pulled from the sheet, so the auto-push
-  // effect can skip echoing that same data straight back up.
-  const applyingRemote = useRef(false);
-  // Always points at the latest state, for use inside the polling interval.
-  const stateRef = useRef(state);
-  stateRef.current = state;
-  // Local-change tracking so a periodic pull never overwrites edits that
-  // haven't reached the sheet yet. localVersion bumps on every local change;
-  // syncedVersion catches up once that change is confirmed pushed. When they
-  // differ (or a push is in flight) we have unsaved work → skip pulling.
-  const localVersion = useRef(0);
-  const syncedVersion = useRef(0);
-  const pushing = useRef(false);
 
   // On startup: if a Sheet is connected, pull from it so edits made directly in
   // the Google Sheet show up in the app.
@@ -93,65 +80,13 @@ export function useStore() {
   useEffect(() => {
     const url = getSheetUrl();
     if (!url || syncPhase.current !== 'ready') return;
-    // Don't echo data we just pulled from the sheet back up to it.
-    if (applyingRemote.current) { applyingRemote.current = false; return; }
-    // A genuine local change: mark it unsaved so pulls won't clobber it.
-    localVersion.current += 1;
     clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
-      const v = localVersion.current;
-      pushing.current = true;
-      pushToSheet(url, stateRef.current)
-        .then(() => { syncedVersion.current = v; })
-        .catch(() => {})
-        .finally(() => { pushing.current = false; });
+      pushToSheet(url, state).catch(() => {});
     }, 2500);
     return () => clearTimeout(pushTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dataSlice);
-
-  // Near-real-time: re-pull from the sheet every ~10s so edits made by other
-  // people (or directly in the sheet) show up without a manual refresh. Skips
-  // while this user is mid-edit, and only applies keys that actually changed —
-  // so it never clobbers what they're typing or triggers an echo push.
-  useEffect(() => {
-    const url = getSheetUrl();
-    if (!url) return;
-    const hasUnsaved = () =>
-      pushing.current || localVersion.current !== syncedVersion.current;
-    const isEditing = (st) =>
-      st.editingStaffIds.length || st.editingConsumableIds.length ||
-      st.editingAssetIds.length || st.editingScrapIds.length;
-    const id = setInterval(() => {
-      if (syncPhase.current !== 'ready') return;
-      // Never pull while we have local edits that haven't been saved yet, or
-      // while the user is actively editing a row — otherwise we'd revert them.
-      if (hasUnsaved() || isEditing(stateRef.current)) return;
-      pullFromSheet(url)
-        .then((data) => {
-          if (!data) return;
-          // Re-check after the network round-trip: a local edit may have begun.
-          if (hasUnsaved() || isEditing(stateRef.current)) return;
-          const now = stateRef.current;
-          const patch = {};
-          let changed = false;
-          for (const k of DATA_KEYS) {
-            if (data[k] !== undefined && JSON.stringify(data[k]) !== JSON.stringify(now[k])) {
-              patch[k] = data[k];
-              changed = true;
-            }
-          }
-          if (changed) {
-            applyingRemote.current = true;
-            set(patch);
-          }
-        })
-        .catch(() => {});
-    }, 10000);
-    return () => clearInterval(id);
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const api = buildActions(state, set, showToast);
   const vals = deriveVals(state, api, set);
@@ -596,8 +531,6 @@ function deriveVals(s, api, setState) {
     onNameChange: (e) => api.updateStaffField(st.id, 'name', e.target.value),
     onPhoneChange: (e) => api.updateStaffField(st.id, 'phone', e.target.value),
     onPositionChange: (e) => api.updateStaffField(st.id, 'position', e.target.value),
-    onNicknameChange: (e) => api.updateStaffField(st.id, 'nickname', e.target.value),
-    onRemarkChange: (e) => api.updateStaffField(st.id, 'remark', e.target.value),
     onToggleEdit: () => api.toggleEditStaff(st.id),
     onDelete: () => api.deleteStaff(st.id),
   }));

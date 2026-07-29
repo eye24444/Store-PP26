@@ -14,11 +14,6 @@ const SHEET_URL_KEY = 'store_pp26_sheet_url';
 const PIN_KEY = 'store_pp26_admin_pin';
 const DEFAULT_PIN = '2626';
 
-// Shared Google Sheet backend, baked in so every device connects to the SAME
-// data automatically — no per-device setup. A user can still override this from
-// Settings → เชื่อม Google Sheet (that value takes precedence).
-const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycby3xsz3yJNcrTXp7m49iHyRi5T9v9zwMXXcHVU4bqU-yor85aUh4t8VXjyrxwP_2wAl/exec';
-
 // 4-digit PIN that gates the Store (admin) mode. Stored locally per device so
 // it never has to live in the shared/public Google Sheet.
 export function getAdminPin() {
@@ -75,9 +70,9 @@ export function clearData() {
 // --- Google Sheet sync config ---
 export function getSheetUrl() {
   try {
-    return localStorage.getItem(SHEET_URL_KEY) || DEFAULT_SHEET_URL;
+    return localStorage.getItem(SHEET_URL_KEY) || '';
   } catch {
-    return DEFAULT_SHEET_URL;
+    return '';
   }
 }
 

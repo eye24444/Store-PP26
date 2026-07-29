@@ -1,203 +1,75 @@
 /**
- * Store PP26 — Google Sheet backend (free, no server needed).
+ * Store PP26 — Google Sheet backend v2 (read-live viewer + request intake)
  *
- * SAVE (app -> sheet): stores the exact JSON snapshot in a hidden "_data" sheet
- * AND renders each collection into a readable Thai tab (พนักงาน, วัสดุสิ้นเปลือง,
- * ทรัพย์สิน, ...).
+ * โมเดลใหม่: Google Sheet = ฐานข้อมูลจริง (แก้ใน Sheet หรือ AppSheet)
+ *   - doGet  : ส่งข้อมูลทุกแท็บให้เว็บแอป "อ่านสด" (รองรับคอลัมน์ที่เพิ่มเองด้วย)
+ *   - doPost : รับคำขอเบิกจากฟอร์มในแอป มาต่อท้ายแท็บ "คำขอเบิก"
  *
- * LOAD (sheet -> app): starts from the _data snapshot, then OVERRIDES the three
- * master lists (staff / consumables / assets) from the readable tabs — so you
- * can type or paste your real inventory into those tabs and pull it into the
- * app. Other collections (history, requests, ...) come from the snapshot.
+ * แท็บที่ควรมี (สร้างเองใน Google Sheet ได้เลย ใส่หัวคอลัมน์แถวแรก):
+ *   - วัสดุสิ้นเปลือง : รหัส | รายการ | หมวด | หน่วย | คงเหลือ | ขั้นต่ำ | (เพิ่มคอลัมน์เองได้)
+ *   - ทรัพย์สิน       : รหัส | ประเภท | รุ่น/ยี่ห้อ | สถานะ | ผู้ถือ | หน่วยงาน | งาน | Cost Code | วันที่เบิก | (เพิ่มได้)
+ *   - พนักงาน         : ชื่อ | เบอร์โทร | ตำแหน่ง | (เพิ่มได้)
+ *   - คำขอเบิก        : สคริปต์สร้าง/เติมให้อัตโนมัติเมื่อมีคนส่งฟอร์ม
  *
- * SETUP: see google-sheet/README.md.
+ * SETUP: วางโค้ดนี้ใน Extensions → Apps Script แล้ว Deploy เป็น Web App
+ *        (Execute as: Me, Who has access: Anyone) คัดลอก URL /exec ไปใส่ในแอป
  */
 
-var RAW_SHEET = '_data';
-// The full JSON snapshot is stored down column A of the hidden _data sheet,
-// split into chunks. A single Google Sheets cell holds at most 50,000 chars,
-// so a growing dataset (hundreds of items) must be spread across several cells.
-var CHUNK = 45000;
-
-// collection key -> readable Thai tab name + [fieldKey, thaiHeader] columns
-var TABLES = {
-  staff: {
-    tab: 'พนักงาน',
-    cols: [['id', 'ID'], ['name', 'ชื่อ'], ['phone', 'เบอร์โทร'], ['position', 'ตำแหน่ง'], ['nickname', 'ชื่อเล่น'], ['remark', 'Remark'], ['photo', 'รูป']],
-  },
-  consumables: {
-    tab: 'วัสดุสิ้นเปลือง',
-    cols: [['code', 'รหัส'], ['name', 'รายการ'], ['category', 'หมวด'], ['unit', 'หน่วย'], ['qty', 'คงเหลือ'], ['threshold', 'ขั้นต่ำ'], ['id', 'ID'], ['photo', 'รูป']],
-  },
-  assets: {
-    tab: 'ทรัพย์สิน',
-    cols: [['code', 'รหัส'], ['category', 'ประเภท'], ['name', 'รุ่น/ยี่ห้อ'], ['status', 'สถานะ'], ['holderStaffId', 'ผู้ถือ (ID)'], ['site', 'หน่วยงาน'], ['costCode', 'Cost Code'], ['date', 'วันที่เบิก'], ['id', 'ID'], ['photo', 'รูป']],
-  },
-  transactions: {
-    tab: 'ประวัติเบิก-คืน',
-    cols: [['date', 'วันที่'], ['person', 'บุคคล'], ['action', 'รายการ'], ['item', 'ของ'], ['job', 'งาน/หน่วยงาน'], ['costCode', 'Cost Code']],
-  },
-  pending: {
-    tab: 'คำขอรออนุมัติ',
-    cols: [['id', 'ID'], ['kind', 'ประเภท'], ['staffId', 'ผู้ขอ (ID)'], ['job', 'งาน'], ['costCode', 'Cost Code'], ['date', 'วันที่'], ['lines', 'รายการ (JSON)']],
-  },
-  requisitions: {
-    tab: 'ใบขอใช้สโตร์กลาง',
-    cols: [['docNo', 'เลขที่เอกสาร'], ['date', 'วันที่'], ['id', 'ID'], ['lines', 'รายการ (JSON)']],
-  },
-  deliveries: {
-    tab: 'บันทึกรับเข้า',
-    cols: [['id', 'ID'], ['reqId', 'ใบขอใช้ (ID)'], ['lineId', 'รายการ (ID)'], ['qty', 'จำนวน'], ['date', 'วันที่'], ['photo', 'รูป']],
-  },
-  scrapReturns: {
-    tab: 'ส่งคืนเศษเหล็ก',
-    cols: [['id', 'ID'], ['date', 'วันที่'], ['note', 'หมายเหตุ'], ['status', 'สถานะ'], ['slipNo', 'เลขใบส่งคืน'], ['slipDate', 'วันที่รับใบ'], ['photo', 'รูป']],
-  },
-};
-
-// Which readable tabs are safe to import back into the app (flat master lists).
-var IMPORT_KEYS = ['staff', 'consumables', 'assets'];
-
-var STATUS_BY_LABEL = {
-  'พร้อมเบิก': 'available',
-  'กำลังถูกเบิกใช้': 'in_use', 'ใช้งานอยู่': 'in_use', 'มีคนถือ': 'in_use',
-  'ส่งซ่อม': 'repair', 'ชำรุด': 'damaged', 'หาย': 'lost',
-  available: 'available', in_use: 'in_use', repair: 'repair', damaged: 'damaged', lost: 'lost',
-};
+// แท็บที่เปิดให้เว็บแอปอ่าน (เพิ่ม/แก้ชื่อได้ตามต้องการ)
+var READ_TABS = ['วัสดุสิ้นเปลือง', 'ทรัพย์สิน', 'พนักงาน', 'คำขอเบิก'];
+var REQUEST_TAB = 'คำขอเบิก';
+var REQUEST_HEADERS = ['วันที่-เวลา', 'ผู้เบิก', 'เบอร์โทร', 'รายการที่ขอ', 'จำนวน', 'ใช้ในงาน', 'Cost Code', 'หมายเหตุ', 'สถานะ'];
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function rawSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(RAW_SHEET);
-  if (!sh) { sh = ss.insertSheet(RAW_SHEET); sh.hideSheet(); }
-  return sh;
-}
-
-// Store a big string down column A, split into <50k-char cells (stored as text
-// so Sheets never coerces a chunk into a number/date and corrupts the JSON).
-function writeRaw_(sh, str) {
-  sh.clearContents();
-  var chunks = [];
-  for (var i = 0; i < str.length; i += CHUNK) chunks.push([str.substr(i, CHUNK)]);
-  if (!chunks.length) chunks.push(['']);
-  var range = sh.getRange(1, 1, chunks.length, 1);
-  range.setNumberFormat('@');
-  range.setValues(chunks);
-}
-
-// Reassemble the string previously written by writeRaw_.
-function readRaw_(sh) {
-  var last = sh.getLastRow();
-  if (last < 1) return '';
-  var values = sh.getRange(1, 1, last, 1).getValues();
-  var s = '';
-  for (var i = 0; i < values.length; i++) s += values[i][0];
-  return s;
-}
-
-var _idc = 0;
-function genId_(p) { _idc++; return p + '_' + Date.now() + '_' + _idc; }
-function num_(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
-function str_(v) { return v === null || v === undefined ? '' : String(v); }
-
-// ---- SAVE: render one collection into its readable tab ----
-function writeTable_(ss, key, rows) {
-  var def = TABLES[key];
-  if (!def) return;
-  var sh = ss.getSheetByName(def.tab) || ss.insertSheet(def.tab);
-  sh.clear();
-  var headers = def.cols.map(function (c) { return c[1]; });
-  var values = [headers];
-  (rows || []).forEach(function (r) {
-    values.push(def.cols.map(function (c) {
-      var v = r[c[0]];
-      if (v === null || v === undefined) return '';
-      if (typeof v === 'object') return JSON.stringify(v);
-      return v;
-    }));
-  });
-  var range = sh.getRange(1, 1, values.length, headers.length);
-  range.setNumberFormat('@');
-  range.setValues(values);
-  sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#2a303c').setFontColor('#ffffff');
-  sh.setFrozenRows(1);
-}
-
-// ---- LOAD: parse a readable tab back into row objects ----
-function parseTable_(ss, key) {
-  var def = TABLES[key];
-  var sh = ss.getSheetByName(def.tab);
-  if (!sh) return null;
-  var values = sh.getDataRange().getValues();
-  if (values.length < 2) return [];
-
-  var labelToKey = {};
-  def.cols.forEach(function (c) { labelToKey[c[1]] = c[0]; });
-  var colKeys = values[0].map(function (h) { return labelToKey[String(h).trim()] || null; });
-
+// อ่านทั้งแท็บเป็น { headers:[...], rows:[{หัวคอลัมน์: ค่า}, ...] }
+function readTab_(ss, name) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) return { headers: [], rows: [] };
+  var values = sh.getDataRange().getDisplayValues(); // getDisplayValues = ได้ข้อความตามที่เห็น (วันที่ไม่เพี้ยน)
+  if (!values.length) return { headers: [], rows: [] };
+  var headers = values[0].map(function (h) { return String(h).trim(); });
   var rows = [];
   for (var i = 1; i < values.length; i++) {
-    var raw = values[i];
-    if (raw.join('').trim() === '') continue; // skip blank lines
-    var obj = {};
-    colKeys.forEach(function (k, idx) { if (k) obj[k] = raw[idx]; });
-    rows.push(normalizeRow_(key, obj));
+    var r = values[i];
+    if (r.join('').trim() === '') continue;
+    var o = {};
+    headers.forEach(function (h, idx) { if (h) o[h] = r[idx]; });
+    rows.push(o);
   }
-  return rows;
+  return { headers: headers, rows: rows };
 }
 
-function normalizeRow_(key, o) {
-  if (key === 'staff') {
-    return { id: str_(o.id) || genId_('s'), name: str_(o.name), phone: str_(o.phone), position: str_(o.position), nickname: str_(o.nickname), remark: str_(o.remark), photo: str_(o.photo) };
-  }
-  if (key === 'consumables') {
-    return {
-      id: str_(o.id) || genId_('c'), code: str_(o.code), name: str_(o.name), category: str_(o.category) || 'ทั่วไป',
-      unit: str_(o.unit), qty: num_(o.qty), threshold: num_(o.threshold), photo: str_(o.photo),
-    };
-  }
-  if (key === 'assets') {
-    var st = STATUS_BY_LABEL[str_(o.status).trim()] || 'available';
-    return {
-      id: str_(o.id) || genId_('a'), code: str_(o.code), category: str_(o.category) || 'ทั่วไป', name: str_(o.name),
-      status: st, holderStaffId: str_(o.holderStaffId) || null, site: str_(o.site) || 'สโตร์กลาง',
-      costCode: str_(o.costCode) || null, date: str_(o.date) || null, photo: str_(o.photo),
-    };
-  }
-  return o;
-}
-
-// GET ?action=load  ->  { ok, data }
+// GET -> ส่งข้อมูลทุกแท็บ
 function doGet(e) {
-  var action = (e && e.parameter && e.parameter.action) || 'load';
-  if (action !== 'load') return json_({ ok: false, error: 'unknown action' });
-
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var raw = readRaw_(rawSheet_());
-  var data = {};
-  if (raw) { try { data = JSON.parse(raw) || {}; } catch (err) { data = {}; } }
-
-  // Override the three master lists from the readable tabs when present.
-  IMPORT_KEYS.forEach(function (key) {
-    var rows = parseTable_(ss, key);
-    if (rows && rows.length) data[key] = rows;
-  });
-
-  return json_({ ok: true, data: data });
+  var tables = {};
+  READ_TABS.forEach(function (name) { tables[name] = readTab_(ss, name); });
+  return json_({ ok: true, tables: tables, updatedAt: new Date().toISOString() });
 }
 
-// POST { action:'save', data:{...} }  ->  { ok }
+// POST { action:'request', data:{ name, phone, lines:[{item, qty}], job, costCode, note } }
 function doPost(e) {
   var body = {};
   try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
-  if (body.action !== 'save') return json_({ ok: false, error: 'unknown action' });
 
-  var data = body.data || {};
-  writeRaw_(rawSheet_(), JSON.stringify(data));
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  Object.keys(TABLES).forEach(function (key) { writeTable_(ss, key, data[key]); });
-  return json_({ ok: true });
+  if (body.action === 'request') {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName(REQUEST_TAB) || ss.insertSheet(REQUEST_TAB);
+    if (sh.getLastRow() === 0) {
+      sh.appendRow(REQUEST_HEADERS);
+      sh.getRange(1, 1, 1, REQUEST_HEADERS.length).setFontWeight('bold').setBackground('#2a303c').setFontColor('#ffffff');
+      sh.setFrozenRows(1);
+    }
+    var d = body.data || {};
+    var when = new Date();
+    var lines = (d.lines && d.lines.length) ? d.lines : [{ item: d.items || '', qty: d.qty || '' }];
+    lines.forEach(function (ln) {
+      sh.appendRow([when, d.name || '', d.phone || '', ln.item || '', ln.qty || '', d.job || '', d.costCode || '', d.note || '', 'รออนุมัติ']);
+    });
+    return json_({ ok: true, count: lines.length });
+  }
+  return json_({ ok: false, error: 'unknown action' });
 }
