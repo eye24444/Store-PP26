@@ -229,25 +229,109 @@ function StaffTab({ vals }) {
           <div>เบอร์โทร</div>
           <div>ตำแหน่ง</div>
           <div>จัดการ</div>
+          <div>ชื่อเล่น</div>
+          <div>Remark</div>
         </div>
-        {vals.staffView.map((st) => (
-          <div key={st.id} style={{ ...grid, padding: '10px 16px', borderTop: '1px solid #333b48', fontSize: 13, alignItems: 'center' }}>
-            <PhotoCell id={st.photoInputId} photo={st.photo} onChange={st.onPhotoChange} />
-            {st.editing ? <input value={st.name} onChange={st.onNameChange} style={{ ...editInput, fontSize: 13 }} /> : <div style={{ fontWeight: 600 }}>{st.name}</div>}
-            {st.editing ? <input value={st.phone} onChange={st.onPhoneChange} style={{ ...editInput, fontSize: 13 }} /> : <div style={{ color: '#8b94a3' }}>{st.phone}</div>}
-            {st.editing ? <input value={st.position} onChange={st.onPositionChange} style={{ ...editInput, fontSize: 13 }} /> : <div style={{ color: '#8b94a3' }}>{st.position}</div>}
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button style={{ ...iconBtn('#3a4150', '#e9edf2'), padding: '0 10px', height: 30, fontSize: 12 }} onClick={st.onToggleEdit}>
-                {st.editLabel}
-              </button>
-              <button style={{ ...iconBtn('#e0555f', '#fff'), padding: '0 10px', height: 30, fontSize: 12 }} onClick={st.onDelete}>
-                ลบ
-              </button>
-            </div>
-          </div>
-        ))}
-        </ScrollX>
+       {vals.staffView.map((st) => (
+  <div
+    key={st.id}
+    style={{
+      ...grid,
+      padding: '10px 16px',
+      borderTop: '1px solid #333b48',
+      fontSize: 13,
+      alignItems: 'center'
+    }}
+  >
+    <PhotoCell
+      id={st.photoInputId}
+      photo={st.photo}
+      onChange={st.onPhotoChange}
+    />
+
+    {st.editing ? (
+      <input
+        value={st.name}
+        onChange={st.onNameChange}
+        style={{ ...editInput, fontSize: 13 }}
+      />
+    ) : (
+      <div style={{ fontWeight: 600 }}>{st.name}</div>
+    )}
+
+    {st.editing ? (
+      <input
+        value={st.phone}
+        onChange={st.onPhoneChange}
+        style={{ ...editInput, fontSize: 13 }}
+      />
+    ) : (
+      <div style={{ color: '#8b94a3' }}>{st.phone}</div>
+    )}
+
+    {st.editing ? (
+      <input
+        value={st.position}
+        onChange={st.onPositionChange}
+        style={{ ...editInput, fontSize: 13 }}
+      />
+    ) : (
+      <div style={{ color: '#8b94a3' }}>{st.position}</div>
+    )}
+
+    {/* ชื่อเล่น */}
+    {st.editing ? (
+      <input
+        value={st.nickname || ''}
+        onChange={(e) => st.onNicknameChange(e)}
+        style={{ ...editInput, fontSize: 13 }}
+      />
+    ) : (
+      <div style={{ color: '#8b94a3' }}>
+        {st.nickname}
       </div>
+    )}
+
+    {/* Remark */}
+    {st.editing ? (
+      <input
+        value={st.remark || ''}
+        onChange={(e) => st.onRemarkChange(e)}
+        style={{ ...editInput, fontSize: 13 }}
+      />
+    ) : (
+      <div style={{ color: '#8b94a3' }}>
+        {st.remark}
+      </div>
+    )}
+
+    <div style={{ display: 'flex', gap: 6 }}>
+      <button
+        style={{
+          ...iconBtn('#3a4150', '#e9edf2'),
+          padding: '0 10px',
+          height: 30,
+          fontSize: 12
+        }}
+        onClick={st.onToggleEdit}
+      >
+        {st.editLabel}
+      </button>
+
+      <button
+        style={{
+          ...iconBtn('#e0555f', '#fff'),
+          padding: '0 10px',
+          height: 30,
+          fontSize: 12
+        }}
+        onClick={st.onDelete}
+      >
+        ลบ
+      </button>
+    </div>
+  </div>
+))}
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>เพิ่มพนักงานใหม่</div>
       <div style={{ ...card, padding: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
