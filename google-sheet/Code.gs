@@ -14,7 +14,10 @@
  */
 
 var RAW_SHEET = '_data';
-var CELL = 'A1';
+// The full JSON snapshot is stored down column A of the hidden _data sheet,
+// split into chunks. A single Google Sheets cell holds at most 50,000 chars,
+// so a growing dataset (hundreds of items) must be spread across several cells.
+var CHUNK = 45000;
 
 // collection key -> readable Thai tab name + [fieldKey, thaiHeader] columns
 var TABLES = {
@@ -71,6 +74,28 @@ function rawSheet_() {
   var sh = ss.getSheetByName(RAW_SHEET);
   if (!sh) { sh = ss.insertSheet(RAW_SHEET); sh.hideSheet(); }
   return sh;
+}
+
+// Store a big string down column A, split into <50k-char cells (stored as text
+// so Sheets never coerces a chunk into a number/date and corrupts the JSON).
+function writeRaw_(sh, str) {
+  sh.clearContents();
+  var chunks = [];
+  for (var i = 0; i < str.length; i += CHUNK) chunks.push([str.substr(i, CHUNK)]);
+  if (!chunks.length) chunks.push(['']);
+  var range = sh.getRange(1, 1, chunks.length, 1);
+  range.setNumberFormat('@');
+  range.setValues(chunks);
+}
+
+// Reassemble the string previously written by writeRaw_.
+function readRaw_(sh) {
+  var last = sh.getLastRow();
+  if (last < 1) return '';
+  var values = sh.getRange(1, 1, last, 1).getValues();
+  var s = '';
+  for (var i = 0; i < values.length; i++) s += values[i][0];
+  return s;
 }
 
 var _idc = 0;
@@ -151,7 +176,7 @@ function doGet(e) {
   if (action !== 'load') return json_({ ok: false, error: 'unknown action' });
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var raw = rawSheet_().getRange(CELL).getValue();
+  var raw = readRaw_(rawSheet_());
   var data = {};
   if (raw) { try { data = JSON.parse(raw) || {}; } catch (err) { data = {}; } }
 
@@ -171,7 +196,7 @@ function doPost(e) {
   if (body.action !== 'save') return json_({ ok: false, error: 'unknown action' });
 
   var data = body.data || {};
-  rawSheet_().getRange(CELL).setValue(JSON.stringify(data));
+  writeRaw_(rawSheet_(), JSON.stringify(data));
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   Object.keys(TABLES).forEach(function (key) { writeTable_(ss, key, data[key]); });
   return json_({ ok: true });
