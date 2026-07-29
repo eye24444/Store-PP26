@@ -531,6 +531,8 @@ function deriveVals(s, api, setState) {
     onNameChange: (e) => api.updateStaffField(st.id, 'name', e.target.value),
     onPhoneChange: (e) => api.updateStaffField(st.id, 'phone', e.target.value),
     onPositionChange: (e) => api.updateStaffField(st.id, 'position', e.target.value),
+    onNicknameChange: (e) => api.updateStaffField(st.id, 'nickname', e.target.value),
+    onRemarkChange: (e) => api.updateStaffField(st.id, 'remark', e.target.value),
     onToggleEdit: () => api.toggleEditStaff(st.id),
     onDelete: () => api.deleteStaff(st.id),
   }));

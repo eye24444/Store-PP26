@@ -20,7 +20,7 @@ var CELL = 'A1';
 var TABLES = {
   staff: {
     tab: 'พนักงาน',
-    cols: [['id', 'ID'], ['name', 'ชื่อ'], ['phone', 'เบอร์โทร'], ['position', 'ตำแหน่ง'], ['photo', 'รูป']],
+    cols: [['id', 'ID'], ['name', 'ชื่อ'], ['phone', 'เบอร์โทร'], ['position', 'ตำแหน่ง'], ['nickname', 'ชื่อเล่น'], ['remark', 'Remark'], ['photo', 'รูป']],
   },
   consumables: {
     tab: 'วัสดุสิ้นเปลือง',
@@ -126,7 +126,7 @@ function parseTable_(ss, key) {
 
 function normalizeRow_(key, o) {
   if (key === 'staff') {
-    return { id: str_(o.id) || genId_('s'), name: str_(o.name), phone: str_(o.phone), position: str_(o.position), photo: str_(o.photo) };
+    return { id: str_(o.id) || genId_('s'), name: str_(o.name), phone: str_(o.phone), position: str_(o.position), nickname: str_(o.nickname), remark: str_(o.remark), photo: str_(o.photo) };
   }
   if (key === 'consumables') {
     return {

@@ -216,7 +216,7 @@ function AssetsTab({ vals }) {
 
 function StaffTab({ vals }) {
   const { s, api, setState } = vals;
-  const grid = { display: 'grid', gridTemplateColumns: '0.6fr 1.3fr 1.1fr 1.1fr 1.4fr', gap: 8 };
+  const grid = { display: 'grid', gridTemplateColumns: '0.6fr 1.3fr 1.1fr 1.1fr 1fr 1.4fr 1.2fr', gap: 8 };
   const disabled = vals.newStaffDisabled;
 
   return (
@@ -228,9 +228,9 @@ function StaffTab({ vals }) {
           <div>ชื่อ</div>
           <div>เบอร์โทร</div>
           <div>ตำแหน่ง</div>
-          <div>จัดการ</div>
           <div>ชื่อเล่น</div>
           <div>Remark</div>
+          <div>จัดการ</div>
         </div>
        {vals.staffView.map((st) => (
   <div
@@ -332,6 +332,8 @@ function StaffTab({ vals }) {
     </div>
   </div>
 ))}
+        </ScrollX>
+      </div>
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>เพิ่มพนักงานใหม่</div>
       <div style={{ ...card, padding: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
