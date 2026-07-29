@@ -46,6 +46,13 @@ export function useStore() {
   // Always points at the latest state, for use inside the polling interval.
   const stateRef = useRef(state);
   stateRef.current = state;
+  // Local-change tracking so a periodic pull never overwrites edits that
+  // haven't reached the sheet yet. localVersion bumps on every local change;
+  // syncedVersion catches up once that change is confirmed pushed. When they
+  // differ (or a push is in flight) we have unsaved work → skip pulling.
+  const localVersion = useRef(0);
+  const syncedVersion = useRef(0);
+  const pushing = useRef(false);
 
   // On startup: if a Sheet is connected, pull from it so edits made directly in
   // the Google Sheet show up in the app.
@@ -88,9 +95,16 @@ export function useStore() {
     if (!url || syncPhase.current !== 'ready') return;
     // Don't echo data we just pulled from the sheet back up to it.
     if (applyingRemote.current) { applyingRemote.current = false; return; }
+    // A genuine local change: mark it unsaved so pulls won't clobber it.
+    localVersion.current += 1;
     clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
-      pushToSheet(url, state).catch(() => {});
+      const v = localVersion.current;
+      pushing.current = true;
+      pushToSheet(url, stateRef.current)
+        .then(() => { syncedVersion.current = v; })
+        .catch(() => {})
+        .finally(() => { pushing.current = false; });
     }, 2500);
     return () => clearTimeout(pushTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,14 +117,21 @@ export function useStore() {
   useEffect(() => {
     const url = getSheetUrl();
     if (!url) return;
+    const hasUnsaved = () =>
+      pushing.current || localVersion.current !== syncedVersion.current;
+    const isEditing = (st) =>
+      st.editingStaffIds.length || st.editingConsumableIds.length ||
+      st.editingAssetIds.length || st.editingScrapIds.length;
     const id = setInterval(() => {
       if (syncPhase.current !== 'ready') return;
-      const cur = stateRef.current;
-      if (cur.editingStaffIds.length || cur.editingConsumableIds.length ||
-          cur.editingAssetIds.length || cur.editingScrapIds.length) return;
+      // Never pull while we have local edits that haven't been saved yet, or
+      // while the user is actively editing a row — otherwise we'd revert them.
+      if (hasUnsaved() || isEditing(stateRef.current)) return;
       pullFromSheet(url)
         .then((data) => {
           if (!data) return;
+          // Re-check after the network round-trip: a local edit may have begun.
+          if (hasUnsaved() || isEditing(stateRef.current)) return;
           const now = stateRef.current;
           const patch = {};
           let changed = false;
