@@ -3,24 +3,22 @@ import { useLiveData, getEndpoint, setEndpoint } from './lib/viewer.js';
 import { useIsMobile } from './lib/useIsMobile.js';
 import { navBtn, fieldStyle, enabledBtn } from './lib/theme.js';
 import { card } from './components/ui.js';
-import ViewDashboard from './pages/ViewDashboard.jsx';
-import ViewAssets from './pages/ViewAssets.jsx';
-import ViewStock from './pages/ViewStock.jsx';
-import RequestForm from './pages/RequestForm.jsx';
-import ViewRequests from './pages/ViewRequests.jsx';
+import { TABS } from './lib/config.js';
+import StockList from './pages/StockList.jsx';
+import MovementForm from './pages/MovementForm.jsx';
+import TableView from './pages/TableView.jsx';
 
 const NAV = [
-  { key: 'dashboard', label: 'ภาพรวมสต็อก' },
-  { key: 'assets', label: 'ติดตามทรัพย์สิน' },
-  { key: 'stock', label: 'วัสดุคงเหลือ' },
-  { key: 'request', label: 'ส่งคำขอเบิก' },
-  { key: 'requests', label: 'คำขอเบิกล่าสุด' },
+  { key: 'stock', label: 'สต็อกคงเหลือ' },
+  { key: 'form', label: 'เบิก / คืนของ' },
+  { key: 'item', label: 'รายการของ (Item)' },
+  { key: 'staff', label: 'พนักงาน (Staff)' },
 ];
 
 export default function App() {
   const { status, tables, updatedAt, error, reload } = useLiveData();
   const isMobile = useIsMobile();
-  const [page, setPage] = useState('dashboard');
+  const [page, setPage] = useState('stock');
   const [drawer, setDrawer] = useState(false);
   const [showCfg, setShowCfg] = useState(false);
 
@@ -43,12 +41,8 @@ export default function App() {
           <span>{n.label}</span>
         </button>
       ))}
-      <button onClick={() => { setShowCfg(true); setDrawer(false); }} style={{ ...navBtn(false), border: '1px solid #333b48', justifyContent: 'flex-start', fontSize: 12.5 }}>
-        ⚙️ ตั้งค่าลิงก์ Sheet
-      </button>
-      <button onClick={reload} style={{ ...navBtn(false), justifyContent: 'flex-start', fontSize: 12.5, color: '#8b94a3' }}>
-        🔄 รีเฟรชข้อมูล
-      </button>
+      <button onClick={reload} style={{ ...navBtn(false), justifyContent: 'flex-start', fontSize: 12.5, color: '#8b94a3' }}>🔄 รีเฟรชข้อมูล</button>
+      <button onClick={() => { setShowCfg(true); setDrawer(false); }} style={{ ...navBtn(false), justifyContent: 'flex-start', fontSize: 12.5, color: '#8b94a3' }}>⚙️ ตั้งค่าลิงก์ Sheet</button>
     </div>
   );
 
@@ -58,9 +52,7 @@ export default function App() {
         <header style={{ position: 'sticky', top: 0, zIndex: 90, background: '#20262f', borderBottom: '1px solid #333b48' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px' }}>
             {brand}
-            <button onClick={() => setDrawer((v) => !v)} aria-label="เมนู" style={{ border: '1px solid #3a4150', background: '#2a303c', color: '#e9edf2', width: 42, height: 42, borderRadius: 10, fontSize: 18, flexShrink: 0 }}>
-              {drawer ? '✕' : '☰'}
-            </button>
+            <button onClick={() => setDrawer((v) => !v)} aria-label="เมนู" style={{ border: '1px solid #3a4150', background: '#2a303c', color: '#e9edf2', width: 42, height: 42, borderRadius: 10, fontSize: 18, flexShrink: 0 }}>{drawer ? '✕' : '☰'}</button>
           </div>
           {drawer ? <div style={{ padding: '0 14px 14px', borderTop: '1px solid #333b48' }}><div style={{ marginTop: 12 }}>{navList}</div></div> : null}
         </header>
@@ -77,18 +69,17 @@ export default function App() {
       <div style={{ flex: 1, minWidth: 0, padding: isMobile ? '18px 16px 60px' : '28px 32px 60px', overflowY: 'auto' }}>
         {status === 'loading' && <Msg icon="⏳" title="กำลังโหลดข้อมูลจาก Google Sheet…" />}
         {status === 'noconfig' && (
-          <Msg icon="🔌" title="ยังไม่ได้เชื่อม Google Sheet" sub="กดปุ่ม ⚙️ ตั้งค่าลิงก์ Sheet แล้ววางลิงก์ Web App (/exec) เพื่อเริ่มดูข้อมูล">
+          <Msg icon="🔌" title="ยังไม่ได้เชื่อม Google Sheet" sub="กด ⚙️ ตั้งค่าลิงก์ Sheet แล้ววางลิงก์ Web App (/exec)">
             <button style={{ ...enabledBtn(false), marginTop: 14 }} onClick={() => setShowCfg(true)}>ตั้งค่าลิงก์ Sheet</button>
           </Msg>
         )}
         {status === 'error' && <Msg icon="⚠️" title="โหลดข้อมูลไม่สำเร็จ" sub={error}><button style={{ ...enabledBtn(false), marginTop: 14 }} onClick={reload}>ลองใหม่</button></Msg>}
         {(status === 'ready' || status === 'refreshing') && tables && (
           <>
-            {page === 'dashboard' && <ViewDashboard tables={tables} />}
-            {page === 'assets' && <ViewAssets tables={tables} isMobile={isMobile} />}
-            {page === 'stock' && <ViewStock tables={tables} />}
-            {page === 'request' && <RequestForm tables={tables} onDone={reload} />}
-            {page === 'requests' && <ViewRequests tables={tables} />}
+            {page === 'stock' && <StockList tables={tables} />}
+            {page === 'form' && <MovementForm tables={tables} onDone={reload} />}
+            {page === 'item' && <TableView tables={tables} tab={TABS.item} title="รายการของ (Item)" subtitle="รายการของทั้งหมดในระบบ" />}
+            {page === 'staff' && <TableView tables={tables} tab={TABS.staff} title="พนักงาน (Staff)" subtitle="รายชื่อพนักงาน" />}
           </>
         )}
       </div>
@@ -118,10 +109,7 @@ function ConfigModal({ onClose, onSaved }) {
           <div style={{ fontSize: 18, fontWeight: 800 }}>ตั้งค่าลิงก์ Google Sheet</div>
           <button onClick={onClose} style={{ border: 'none', background: '#3a4150', color: '#e9edf2', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>×</button>
         </div>
-        <div style={{ fontSize: 12.5, color: '#8b94a3', marginBottom: 14, lineHeight: 1.6 }}>
-          วางลิงก์ Web App (ลงท้าย /exec) จาก Google Apps Script — แอปจะอ่านข้อมูลสดจาก Google Sheet ทันที
-          <br />สำหรับใช้งานจริงกับทุกคน แนะนำใส่ลิงก์ในไฟล์ <code style={{ color: '#f5a623' }}>src/lib/config.js</code> จะได้ไม่ต้องตั้งทีละเครื่อง
-        </div>
+        <div style={{ fontSize: 12.5, color: '#8b94a3', marginBottom: 14, lineHeight: 1.6 }}>วางลิงก์ Web App (/exec) — ปกติใส่ไว้ในไฟล์ <code style={{ color: '#f5a623' }}>src/lib/config.js</code> แล้ว ไม่ต้องตั้งซ้ำ</div>
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..../exec" style={{ ...fieldStyle, marginBottom: 14 }} />
         <button style={enabledBtn(false)} onClick={() => { setEndpoint(url.trim()); onClose(); onSaved(); }}>บันทึกและโหลดข้อมูล</button>
       </div>

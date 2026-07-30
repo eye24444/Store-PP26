@@ -73,14 +73,15 @@ export function useLiveData() {
   return { ...state, reload: load };
 }
 
-// ส่งคำขอเบิกไปต่อท้ายแท็บ "คำขอเบิก"
-export async function submitRequest(payload) {
+// บันทึกการเบิก/คืน → สร้าง Requisition + Inventory ใน Google Sheet
+// payload: { status:'Stock Out'|'Stock In', by, vendor, lines:[{itemId, amount}] }
+export async function submitMovement(payload) {
   const url = getEndpoint();
   if (!url) throw new Error('ยังไม่ได้ตั้งค่าลิงก์ Google Sheet');
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'request', data: payload }),
+    body: JSON.stringify({ action: 'movement', data: payload }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json().catch(() => ({ ok: true }));

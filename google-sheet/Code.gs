@@ -1,34 +1,26 @@
 /**
- * Store PP26 — Google Sheet backend v2 (read-live viewer + request intake)
+ * Store PP26 — Google Sheet backend v3 (shared with AppSheet)
  *
- * โมเดลใหม่: Google Sheet = ฐานข้อมูลจริง (แก้ใน Sheet หรือ AppSheet)
- *   - doGet  : ส่งข้อมูลทุกแท็บให้เว็บแอป "อ่านสด" (รองรับคอลัมน์ที่เพิ่มเองด้วย)
- *   - doPost : รับคำขอเบิกจากฟอร์มในแอป มาต่อท้ายแท็บ "คำขอเบิก"
+ * โมเดล: Item / Staff / Store / Requisition / Inventory (ชุดเดียวกับ AppSheet)
+ *   - doGet  : ส่งข้อมูลทุกแท็บให้เว็บอ่านสด
+ *   - doPost : รับการเบิก/คืนจากเว็บ → สร้าง 1 ใบ Requisition + หลายแถว Inventory
+ *              (ออกเลข Req NO + ใส่ Movement +/- ให้เอง เพราะเว็บเขียนตรง ไม่ผ่าน AppSheet)
+ *   - ไม่ยุ่งกับคอลัมน์ Stock ในตาราง Item (เป็นสูตร SUMIF อยู่แล้ว อัปเดตเอง)
  *
- * แท็บที่ควรมี (สร้างเองใน Google Sheet ได้เลย ใส่หัวคอลัมน์แถวแรก):
- *   - วัสดุสิ้นเปลือง : รหัส | รายการ | หมวด | หน่วย | คงเหลือ | ขั้นต่ำ | (เพิ่มคอลัมน์เองได้)
- *   - ทรัพย์สิน       : รหัส | ประเภท | รุ่น/ยี่ห้อ | สถานะ | ผู้ถือ | หน่วยงาน | งาน | Cost Code | วันที่เบิก | (เพิ่มได้)
- *   - พนักงาน         : ชื่อ | เบอร์โทร | ตำแหน่ง | (เพิ่มได้)
- *   - คำขอเบิก        : สคริปต์สร้าง/เติมให้อัตโนมัติเมื่อมีคนส่งฟอร์ม
- *
- * SETUP: วางโค้ดนี้ใน Extensions → Apps Script แล้ว Deploy เป็น Web App
- *        (Execute as: Me, Who has access: Anyone) คัดลอก URL /exec ไปใส่ในแอป
+ * Deploy เป็น Web App (Execute as: Me, Who has access: Anyone)
  */
 
-// แท็บที่เปิดให้เว็บแอปอ่าน (เพิ่ม/แก้ชื่อได้ตามต้องการ)
-var READ_TABS = ['วัสดุสิ้นเปลือง', 'ทรัพย์สิน', 'พนักงาน', 'คำขอเบิก'];
-var REQUEST_TAB = 'คำขอเบิก';
-var REQUEST_HEADERS = ['วันที่-เวลา', 'ผู้เบิก', 'เบอร์โทร', 'รายการที่ขอ', 'จำนวน', 'ใช้ในงาน', 'Cost Code', 'หมายเหตุ', 'สถานะ'];
+var READ_TABS = ['Item', 'Staff', 'Store', 'Requisition', 'Inventory'];
+var TZ = 'Asia/Bangkok';
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// อ่านทั้งแท็บเป็น { headers:[...], rows:[{หัวคอลัมน์: ค่า}, ...] }
 function readTab_(ss, name) {
   var sh = ss.getSheetByName(name);
   if (!sh) return { headers: [], rows: [] };
-  var values = sh.getDataRange().getDisplayValues(); // getDisplayValues = ได้ข้อความตามที่เห็น (วันที่ไม่เพี้ยน)
+  var values = sh.getDataRange().getDisplayValues();
   if (!values.length) return { headers: [], rows: [] };
   var headers = values[0].map(function (h) { return String(h).trim(); });
   var rows = [];
@@ -42,7 +34,6 @@ function readTab_(ss, name) {
   return { headers: headers, rows: rows };
 }
 
-// GET -> ส่งข้อมูลทุกแท็บ
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tables = {};
@@ -50,26 +41,67 @@ function doGet(e) {
   return json_({ ok: true, tables: tables, updatedAt: new Date().toISOString() });
 }
 
-// POST { action:'request', data:{ name, phone, lines:[{item, qty}], job, costCode, note } }
+// เพิ่มแถวโดยจับคู่ตามชื่อหัวคอลัมน์ (ทนต่อการสลับลำดับคอลัมน์)
+function appendByHeader_(sh, obj) {
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return String(h).trim(); });
+  var row = headers.map(function (h) { return Object.prototype.hasOwnProperty.call(obj, h) ? obj[h] : ''; });
+  sh.appendRow(row);
+}
+
+// ออกเลข Req NO: ST26 + ddmmyy + '-' + running 3 หลัก (รีเซ็ตต่อวัน)
+function nextReqNo_(ss) {
+  var prefix = 'ST26' + Utilities.formatDate(new Date(), TZ, 'ddMMyy');
+  var sh = ss.getSheetByName('Requisition');
+  var count = 0;
+  if (sh && sh.getLastRow() > 1) {
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+    var idx = headers.indexOf('Req NO');
+    if (idx >= 0) {
+      var col = sh.getRange(2, idx + 1, sh.getLastRow() - 1, 1).getValues();
+      col.forEach(function (r) { if (String(r[0]).indexOf(prefix) === 0) count++; });
+    }
+  }
+  return prefix + '-' + ('00' + (count + 1)).slice(-3);
+}
+
+function uid8_() {
+  return Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+}
+
+// POST { action:'movement', data:{ status, by, vendor, lines:[{itemId, amount}] } }
 function doPost(e) {
   var body = {};
   try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
+  if (body.action !== 'movement') return json_({ ok: false, error: 'unknown action' });
 
-  if (body.action === 'request') {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sh = ss.getSheetByName(REQUEST_TAB) || ss.insertSheet(REQUEST_TAB);
-    if (sh.getLastRow() === 0) {
-      sh.appendRow(REQUEST_HEADERS);
-      sh.getRange(1, 1, 1, REQUEST_HEADERS.length).setFontWeight('bold').setBackground('#2a303c').setFontColor('#ffffff');
-      sh.setFrozenRows(1);
-    }
-    var d = body.data || {};
-    var when = new Date();
-    var lines = (d.lines && d.lines.length) ? d.lines : [{ item: d.items || '', qty: d.qty || '' }];
-    lines.forEach(function (ln) {
-      sh.appendRow([when, d.name || '', d.phone || '', ln.item || '', ln.qty || '', d.job || '', d.costCode || '', d.note || '', 'รออนุมัติ']);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d = body.data || {};
+  var status = d.status === 'Stock In' ? 'Stock In' : 'Stock Out';
+  var sign = status === 'Stock Out' ? -1 : 1;
+  var reqNo = nextReqNo_(ss);
+  var now = new Date();
+
+  // 1) หัวใบ Requisition
+  appendByHeader_(ss.getSheetByName('Requisition'), {
+    'Req NO': reqNo, 'Date': now, 'Status': status,
+    'By': d.by || '', 'Vendors': d.vendor || '', 'remark': '',
+  });
+
+  // 2) รายการ Inventory (พร้อม Movement +/-)
+  var invSheet = ss.getSheetByName('Inventory');
+  var lines = d.lines || [];
+  lines.forEach(function (ln) {
+    var amt = Number(ln.amount) || 0;
+    appendByHeader_(invSheet, {
+      'Inventory ID': uid8_(),
+      'Req NO': reqNo,
+      'Item ID': ln.itemId,
+      'Date': now,
+      'Amount': amt,
+      'Movement': sign * amt,
     });
-    return json_({ ok: true, count: lines.length });
-  }
-  return json_({ ok: false, error: 'unknown action' });
+  });
+
+  return json_({ ok: true, reqNo: reqNo, count: lines.length });
 }
