@@ -9,7 +9,7 @@ export default function MovementForm({ tables, onDone }) {
   const [mode, setMode] = useState('out'); // 'out' = เบิก, 'in' = คืน
   const [by, setBy] = useState(''); // staff id (เบิก)
   const [vendor, setVendor] = useState(''); // store id (คืน)
-  const [itemId, setItemId] = useState('');
+  const [item, setItem] = useState(''); // เก็บ "ชื่อของ" (ให้ตรงกับที่ AppSheet เก็บ)
   const [amount, setAmount] = useState(1);
   const [cart, setCart] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -18,15 +18,11 @@ export default function MovementForm({ tables, onDone }) {
   const items = (tables[TABS.item] || { rows: [] }).rows;
   const staff = (tables[TABS.staff] || { rows: [] }).rows;
   const stores = (tables[TABS.store] || { rows: [] }).rows;
-  const itemName = (id) => {
-    const it = items.find((r) => String(r[COLS.itemId]) === String(id));
-    return it ? it[COLS.itemName] : id;
-  };
 
   const addLine = () => {
-    if (!itemId || Number(amount) <= 0) return;
-    setCart((c) => [...c, { itemId, amount: Number(amount) }]);
-    setItemId('');
+    if (!item || Number(amount) <= 0) return;
+    setCart((c) => [...c, { item, amount: Number(amount) }]);
+    setItem('');
     setAmount(1);
   };
   const removeLine = (i) => setCart((c) => c.filter((_, idx) => idx !== i));
@@ -90,7 +86,7 @@ export default function MovementForm({ tables, onDone }) {
             <select value={by} onChange={(e) => setBy(e.target.value)} style={fieldStyle}>
               <option value="">-- เลือกพนักงาน --</option>
               {staff.map((s, i) => (
-                <option key={i} value={s[COLS.staffId]}>{s[COLS.staffName] || s[COLS.staffId]}</option>
+                <option key={i} value={s[COLS.staffId]}>{s[COLS.staffNick] || s[COLS.staffName] || s[COLS.staffId]}</option>
               ))}
             </select>
           </div>
@@ -113,10 +109,10 @@ export default function MovementForm({ tables, onDone }) {
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 220 }}>
             <div style={fieldLabel}>เลือกของ</div>
-            <select value={itemId} onChange={(e) => setItemId(e.target.value)} style={fieldStyle}>
+            <select value={item} onChange={(e) => setItem(e.target.value)} style={fieldStyle}>
               <option value="">-- เลือกรายการ --</option>
               {items.map((r, i) => (
-                <option key={i} value={r[COLS.itemId]}>
+                <option key={i} value={r[COLS.itemName]}>
                   {r[COLS.itemName]}{r[COLS.itemStock] !== undefined ? ` (เหลือ ${r[COLS.itemStock]} ${r[COLS.itemUnit] || ''})` : ''}
                 </option>
               ))}
@@ -126,14 +122,14 @@ export default function MovementForm({ tables, onDone }) {
             <div style={fieldLabel}>จำนวน</div>
             <input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} style={fieldStyle} />
           </div>
-          <button disabled={!itemId} style={enabledBtn(!itemId)} onClick={addLine}>+ เพิ่ม</button>
+          <button disabled={!item} style={enabledBtn(!item)} onClick={addLine}>+ เพิ่ม</button>
         </div>
 
         {cart.length ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {cart.map((l, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#2a303c', borderRadius: 10, padding: '10px 12px' }}>
-                <div style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{itemName(l.itemId)}</div>
+                <div style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{l.item}</div>
                 <div style={{ fontSize: 12.5, color: mode === 'out' ? '#e0555f' : '#34c471', fontWeight: 700 }}>
                   {mode === 'out' ? '−' : '+'}{l.amount}
                 </div>

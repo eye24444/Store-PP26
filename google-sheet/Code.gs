@@ -96,7 +96,8 @@ function doPost(e) {
     appendByHeader_(invSheet, {
       'Inventory ID': uid8_(),
       'Req NO': reqNo,
-      'Item ID': ln.itemId,
+      // เก็บ "ชื่อของ" ให้ตรงกับที่ AppSheet เก็บ + สูตร Stock ที่จับคู่ด้วยชื่อ
+      'Item ID': ln.item,
       'Date': now,
       'Amount': amt,
       'Movement': sign * amt,

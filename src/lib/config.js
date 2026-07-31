@@ -16,8 +16,8 @@ export const TABS = {
 export const COLS = {
   // Item
   itemId: 'Item ID', itemName: 'Name', itemUnit: 'Description', itemStock: 'Stock', itemCat: 'Category',
-  // Staff  (key = ID, ชื่อ)
-  staffId: 'ID', staffName: 'ชื่อ',
+  // Staff  (key = ID; โชว์ชื่อเล่นใน dropdown)
+  staffId: 'ID', staffName: 'ชื่อ', staffNick: 'ชื่อเล่น',
   // Store (key = ID, Name)
   storeId: 'ID', storeName: 'Name',
 };
