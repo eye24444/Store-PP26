@@ -3,6 +3,7 @@ import { card, pageTitle, pageSub, fieldLabel } from '../components/ui.js';
 import { fieldStyle, reqTypeBtn, enabledBtn, submitBtn } from '../lib/theme.js';
 import { TABS, COLS } from '../lib/config.js';
 import { submitMovement } from '../lib/viewer.js';
+import SearchSelect from '../components/SearchSelect.jsx';
 
 // ฟอร์มเบิก (Stock Out) / คืน (Stock In) → สร้าง Requisition + Inventory ใน Sheet
 export default function MovementForm({ tables, onDone }) {
@@ -74,31 +75,31 @@ export default function MovementForm({ tables, onDone }) {
 
       {/* เลือกโหมด */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button style={reqTypeBtn(mode === 'out')} onClick={() => setMode('out')}>เบิกของ (Stock Out)</button>
-        <button style={reqTypeBtn(mode === 'in')} onClick={() => setMode('in')}>คืนของ (Stock In)</button>
+        <button style={reqTypeBtn(mode === 'out')} onClick={() => setMode('out')}>เบิกของ · Withdraw</button>
+        <button style={reqTypeBtn(mode === 'in')} onClick={() => setMode('in')}>คืนของ · Return</button>
       </div>
 
       {/* ใคร/ที่ไหน */}
       <div style={{ ...card, padding: 18, marginBottom: 16 }}>
         {mode === 'out' ? (
           <div>
-            <div style={fieldLabel}>ผู้เบิก (By) *</div>
-            <select value={by} onChange={(e) => setBy(e.target.value)} style={fieldStyle}>
-              <option value="">-- เลือกพนักงาน --</option>
-              {staff.map((s, i) => (
-                <option key={i} value={s[COLS.staffId]}>{s[COLS.staffNick] || s[COLS.staffName] || s[COLS.staffId]}</option>
-              ))}
-            </select>
+            <div style={fieldLabel}>ผู้เบิก · Staff (By) *</div>
+            <SearchSelect
+              placeholder="พิมพ์ค้นหาชื่อพนักงาน…"
+              value={by}
+              onChange={setBy}
+              options={staff.map((s) => ({ value: s[COLS.staffId], label: s[COLS.staffNick] || s[COLS.staffName] || s[COLS.staffId] }))}
+            />
           </div>
         ) : (
           <div>
-            <div style={fieldLabel}>คืนที่ / จาก (Store) *</div>
-            <select value={vendor} onChange={(e) => setVendor(e.target.value)} style={fieldStyle}>
-              <option value="">-- เลือกสโตร์ --</option>
-              {stores.map((s, i) => (
-                <option key={i} value={s[COLS.storeId]}>{s[COLS.storeName] || s[COLS.storeId]}</option>
-              ))}
-            </select>
+            <div style={fieldLabel}>คืนที่ / จาก · Store *</div>
+            <SearchSelect
+              placeholder="พิมพ์ค้นหาสโตร์…"
+              value={vendor}
+              onChange={setVendor}
+              options={stores.map((s) => ({ value: s[COLS.storeId], label: s[COLS.storeName] || s[COLS.storeId] }))}
+            />
           </div>
         )}
       </div>
@@ -108,15 +109,16 @@ export default function MovementForm({ tables, onDone }) {
       <div style={{ ...card, padding: 18, display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={fieldLabel}>เลือกของ</div>
-            <select value={item} onChange={(e) => setItem(e.target.value)} style={fieldStyle}>
-              <option value="">-- เลือกรายการ --</option>
-              {items.map((r, i) => (
-                <option key={i} value={r[COLS.itemName]}>
-                  {r[COLS.itemName]}{r[COLS.itemStock] !== undefined ? ` (เหลือ ${r[COLS.itemStock]} ${r[COLS.itemUnit] || ''})` : ''}
-                </option>
-              ))}
-            </select>
+            <div style={fieldLabel}>เลือกของ · Item</div>
+            <SearchSelect
+              placeholder="พิมพ์ค้นหารายการของ…"
+              value={item}
+              onChange={setItem}
+              options={items.map((r) => ({
+                value: r[COLS.itemName],
+                label: `${r[COLS.itemName]}${r[COLS.itemStock] !== undefined ? ` (เหลือ ${r[COLS.itemStock]} ${r[COLS.itemUnit] || ''})` : ''}`,
+              }))}
+            />
           </div>
           <div style={{ width: 100 }}>
             <div style={fieldLabel}>จำนวน</div>
